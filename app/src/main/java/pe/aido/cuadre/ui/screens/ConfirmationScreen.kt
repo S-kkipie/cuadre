@@ -36,7 +36,7 @@ import pe.aido.cuadre.alerts.PaymentAlerts
 import pe.aido.cuadre.core.ConfirmationPolicy
 import pe.aido.cuadre.core.VerificationEngine.ConfirmedPayment
 import pe.aido.cuadre.ui.components.PrimaryButton
-import pe.aido.cuadre.ui.components.displayName
+import pe.aido.cuadre.core.displayName
 import pe.aido.cuadre.ui.hhmmss
 import pe.aido.cuadre.ui.soles
 import pe.aido.cuadre.ui.theme.Cuadre

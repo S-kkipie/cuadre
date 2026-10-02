@@ -20,6 +20,9 @@ enum class Wallet(val displayName: String, val packages: Set<String>) {
     PLIN_MIBANCO("Plin (Mibanco)", setOf("com.mibanco.bancamovil")),
     PLIN_PICHINCHA("Plin (Pichincha)", setOf("pe.pichincha.bm")),
 
+    // Entered by hand at the till; never comes from a notification (no packages).
+    EFECTIVO("Efectivo", emptySet()),
+
     UNKNOWN("Desconocido", emptySet());
 
     companion object {

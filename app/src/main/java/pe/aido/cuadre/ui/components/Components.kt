@@ -25,6 +25,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontStyle
@@ -33,6 +35,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import pe.aido.cuadre.core.VerificationEngine.ConfirmedPayment
+import pe.aido.cuadre.core.displayName
+import pe.aido.cuadre.core.shortName
 import pe.aido.cuadre.ui.hhmm
 import pe.aido.cuadre.ui.plainAmount
 import pe.aido.cuadre.ui.theme.Cuadre
@@ -146,15 +150,21 @@ fun ListRow(
 fun PaymentRow(payment: ConfirmedPayment, modifier: Modifier = Modifier) {
     val e = payment.event
     val c = Cuadre.colors
-    val wallet = e.wallet.displayName.substringBefore(" (")
+    val wallet = e.wallet.shortName
     val detail = listOfNotNull(wallet, e.postedAtMillis.hhmm(), e.securityCode?.let { "cód. $it" })
         .joinToString(" · ")
-    Row(Modifier.fillMaxWidth().padding(vertical = 16.dp).then(modifier), verticalAlignment = Alignment.Top) {
+    val isCash = e.wallet == pe.aido.cuadre.domain.Wallet.EFECTIVO
+    val unknownPayer = e.counterparty == null && !isCash
+    Row(modifier.fillMaxWidth().padding(vertical = 16.dp), verticalAlignment = Alignment.Top) {
         Column(Modifier.weight(1f)) {
             Text(
-                e.counterparty?.let(::displayName) ?: "Pagador no visible",
-                style = Cuadre.type.rowTitle.copy(fontStyle = if (e.counterparty == null) FontStyle.Italic else FontStyle.Normal),
-                color = if (e.counterparty == null) c.inkMuted else c.ink,
+                when {
+                    isCash -> "Venta en efectivo"
+                    e.counterparty != null -> displayName(e.counterparty)
+                    else -> "Pagador no visible"
+                },
+                style = Cuadre.type.rowTitle.copy(fontStyle = if (unknownPayer) FontStyle.Italic else FontStyle.Normal),
+                color = if (unknownPayer) c.inkMuted else c.ink,
             )
             Spacer(Modifier.height(4.dp))
             Text(detail, style = Cuadre.type.secondary, color = c.inkMuted)
@@ -164,9 +174,45 @@ fun PaymentRow(payment: ConfirmedPayment, modifier: Modifier = Modifier) {
     }
 }
 
-/** Wallets send names in caps ("ROSA HUAMAN"); show them in sentence case like the design. */
-fun displayName(raw: String): String =
-    raw.trim().lowercase().split(Regex("\\s+")).joinToString(" ") { w -> w.replaceFirstChar { it.uppercase() } }
+/** Big money input: "S/" prefix, decimal keyboard, hairline underline. */
+@Composable
+fun AmountInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    focusRequester: androidx.compose.ui.focus.FocusRequester? = null,
+) {
+    val c = Cuadre.colors
+    Column(modifier.fillMaxWidth()) {
+        Text(label, style = Cuadre.type.secondary, color = c.inkMuted)
+        Spacer(Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("S/ ", style = Cuadre.type.amountTotal.copy(fontSize = 36.sp), color = c.inkMuted)
+            androidx.compose.foundation.text.BasicTextField(
+                value = value,
+                onValueChange = { v -> onValueChange(v.filter { it.isDigit() || it == '.' || it == ',' }.take(10)) },
+                textStyle = Cuadre.type.amountTotal.copy(fontSize = 36.sp, color = c.ink),
+                singleLine = true,
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(c.primary),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
+                ),
+                decorationBox = { inner ->
+                    Box {
+                        if (value.isEmpty()) Text("0.00", style = Cuadre.type.amountTotal.copy(fontSize = 36.sp), color = c.hairline)
+                        inner()
+                    }
+                },
+                modifier = Modifier.weight(1f).then(
+                    if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier,
+                ),
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Hairline()
+    }
+}
 
 @Composable
 fun CuadreSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {

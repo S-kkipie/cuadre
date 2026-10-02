@@ -41,11 +41,53 @@ interface PaymentDao {
 
     @Query("SELECT * FROM payments ORDER BY postedAtMillis DESC")
     fun observeAll(): Flow<List<PaymentEntity>>
+
+    /**
+     * Only hand-entered cash can be deleted. Listener-proven Yape/Plin payments are immutable,
+     * so nobody at the till can make a real payment disappear.
+     */
+    @Query("DELETE FROM payments WHERE id = :id AND wallet = 'EFECTIVO'")
+    suspend fun deleteCash(id: String): Int
 }
 
-@Database(entities = [PaymentEntity::class], version = 2, exportSchema = false)
+/** One "cuadre de caja" per business day (latest close wins). */
+@Entity(tableName = "day_closes")
+data class DayCloseEntity(
+    @PrimaryKey val date: String,        // ISO local date, "2026-10-02"
+    val openingCash: Double,
+    val countedCash: Double,
+    val expectedCash: Double,
+    val salesTotal: Double,
+    val closedAtMillis: Long,
+)
+
+@Dao
+interface DayCloseDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(close: DayCloseEntity)
+
+    @Query("SELECT * FROM day_closes ORDER BY date DESC")
+    fun observeAll(): Flow<List<DayCloseEntity>>
+
+    @Query("SELECT * FROM day_closes ORDER BY date DESC LIMIT 1")
+    suspend fun latest(): DayCloseEntity?
+}
+
+@Database(entities = [PaymentEntity::class, DayCloseEntity::class], version = 3, exportSchema = false)
 abstract class CuadreDatabase : RoomDatabase() {
     abstract fun paymentDao(): PaymentDao
+    abstract fun dayCloseDao(): DayCloseDao
+}
+
+/** v2 -> v3: daily cash closes. */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS day_closes (" +
+                "date TEXT NOT NULL PRIMARY KEY, openingCash REAL NOT NULL, countedCash REAL NOT NULL, " +
+                "expectedCash REAL NOT NULL, salesTotal REAL NOT NULL, closedAtMillis INTEGER NOT NULL)",
+        )
+    }
 }
 
 /** v1 -> v2: Yape security code. Keeps payments already captured. */

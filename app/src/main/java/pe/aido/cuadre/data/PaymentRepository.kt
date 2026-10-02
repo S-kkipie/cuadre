@@ -31,6 +31,19 @@ class PaymentRepository(private val dao: PaymentDao) {
     fun observeBetween(from: Long, to: Long): Flow<List<ConfirmedPayment>> =
         dao.observeBetween(from, to).map { rows -> rows.map { it.toConfirmed() } }
 
+    /** A cash sale typed at the till. Not deduplicated: equal amounts seconds apart are real sales. */
+    suspend fun addCash(amount: Double, atMillis: Long): ConfirmedPayment {
+        val payment = ConfirmedPayment(
+            id = "${Wallet.EFECTIVO.name}:${java.util.UUID.randomUUID()}",
+            event = PaymentEvent(Wallet.EFECTIVO, amount, null, PaymentDirection.INCOMING, atMillis, "efectivo"),
+        )
+        dao.insert(payment.toEntity())
+        return payment
+    }
+
+    /** True if a cash entry was removed. Yape/Plin payments are never deletable. */
+    suspend fun deleteCash(id: String): Boolean = dao.deleteCash(id) > 0
+
     fun observeAll(): Flow<List<ConfirmedPayment>> =
         dao.observeAll().map { rows -> rows.map { it.toConfirmed() } }
 

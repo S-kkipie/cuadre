@@ -25,6 +25,10 @@
         <package android:name="pe.com.tarjetasperuanasprepago.tppapp" />
         <package android:name="com.mibanco.bancamovil" />
         <package android:name="pe.pichincha.bm" />
+        <!-- Text-to-speech engine for announcing payments out loud. -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
     </queries>
 
     <application
@@ -44,6 +48,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <service
             android:name=".notifications.PaymentNotificationListenerService"

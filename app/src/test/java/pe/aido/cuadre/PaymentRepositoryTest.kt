@@ -34,6 +34,11 @@ private class FakePaymentDao : PaymentDao {
         rows.map { inRange(from, to) }
     override fun observeAll(): Flow<List<PaymentEntity>> =
         rows.map { it.sortedByDescending { p -> p.postedAtMillis } }
+    override suspend fun deleteCash(id: String): Int {
+        val before = rows.value.size
+        rows.value = rows.value.filterNot { it.id == id && it.wallet == "EFECTIVO" }
+        return before - rows.value.size
+    }
 }
 
 class PaymentRepositoryTest {
@@ -73,6 +78,26 @@ class PaymentRepositoryTest {
         val other = PaymentEvent(Wallet.YAPE, 50.0, null, PaymentDirection.OTHER, 1_000L, "raw")
         assertNull(repo.onEvent(other))
         assertEquals(0, dao.rows.value.size)
+    }
+
+    @Test fun identicalCashSalesAreNotDeduplicated() = runTest {
+        // Two S/ 2.50 cash sales a few seconds apart are two sales, unlike a re-posted notification.
+        val dao = FakePaymentDao()
+        val repo = PaymentRepository(dao)
+        repo.addCash(2.5, 1_000L)
+        repo.addCash(2.5, 1_500L)
+        assertEquals(2, dao.rows.value.size)
+        assertEquals(Wallet.EFECTIVO, repo.paymentsBetween(0L, 10_000L).first().event.wallet)
+    }
+
+    @Test fun onlyCashCanBeDeleted() = runTest {
+        val dao = FakePaymentDao()
+        val repo = PaymentRepository(dao)
+        val yape = repo.onEvent(income(50.0, 1_000L))!!
+        val cash = repo.addCash(5.0, 2_000L)
+        assertEquals(false, repo.deleteCash(yape.id))
+        assertEquals(true, repo.deleteCash(cash.id))
+        assertEquals(listOf(yape.id), dao.rows.value.map { it.id })
     }
 
     @Test fun securityCodeRoundTrips() = runTest {

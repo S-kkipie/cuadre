@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import pe.aido.cuadre.setup.BatteryCheck
+import pe.aido.cuadre.ui.components.CuadreSwitch
 import pe.aido.cuadre.ui.components.Hairline
 import pe.aido.cuadre.ui.components.ListRow
 import pe.aido.cuadre.ui.components.OutlineButton
@@ -51,6 +52,9 @@ fun SetupScreen(
     onFixBattery: (String) -> Unit,
     onOpenPrivacy: () -> Unit,
     onStart: () -> Unit,
+    voiceOn: Boolean = true,
+    onVoiceChange: (Boolean) -> Unit = {},
+    onTestVoice: () -> Unit = {},
 ) {
     val c = Cuadre.colors
     val t = Cuadre.type
@@ -110,6 +114,14 @@ fun SetupScreen(
                 Spacer(Modifier.height(8.dp))
             }
             Hairline()
+            if (!firstRun) {
+                Spacer(Modifier.height(32.dp))
+                Text("Voz", style = t.section, color = c.ink)
+                ListRow("Anunciar pagos con voz", secondary = "Dice el monto, quién pagó y el código") {
+                    CuadreSwitch(voiceOn, onVoiceChange)
+                }
+                TextLink("Probar voz", onTestVoice)
+            }
             Spacer(Modifier.height(24.dp))
         }
         if (firstRun) {

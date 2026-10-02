@@ -24,6 +24,7 @@ import pe.aido.cuadre.domain.Wallet
 import pe.aido.cuadre.ui.components.CuadreSwitch
 import pe.aido.cuadre.ui.components.Hairline
 import pe.aido.cuadre.ui.components.ListRow
+import pe.aido.cuadre.ui.components.OutlineButton
 import pe.aido.cuadre.ui.components.PaymentRow
 import pe.aido.cuadre.ui.components.SidePadding
 import pe.aido.cuadre.ui.components.StatusDot
@@ -45,6 +46,10 @@ fun TodayScreen(
     onTillModeChange: (Boolean) -> Unit,
     onOpenHistory: () -> Unit,
     onOpenSettings: () -> Unit,
+    onAddCash: () -> Unit,
+    onCloseDay: () -> Unit,
+    onCashTap: (ConfirmedPayment) -> Unit,
+    closeLabel: String?,
     debugAction: (@Composable () -> Unit)? = null,
 ) {
     val c = Cuadre.colors
@@ -110,6 +115,17 @@ fun TodayScreen(
         }
 
         item {
+            Row(Modifier.fillMaxWidth().padding(bottom = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlineButton("+ Efectivo", onAddCash)
+                Spacer(Modifier.weight(1f))
+                TextLink(if (closeLabel != null) "Caja cerrada · ver" else "Cerrar caja", onCloseDay)
+            }
+            if (closeLabel != null) {
+                Text(closeLabel, style = t.secondary, color = c.inkMuted, modifier = Modifier.padding(bottom = 16.dp))
+            }
+        }
+
+        item {
             Hairline()
             ListRow("Modo caja", secondary = "Pantalla encendida y aviso en grande con sonido") {
                 CuadreSwitch(tillMode, onTillModeChange)
@@ -132,7 +148,8 @@ fun TodayScreen(
         }
 
         items(payments, key = { it.id }) { p ->
-            PaymentRow(p)
+            val isCash = p.event.wallet == Wallet.EFECTIVO
+            PaymentRow(p, if (isCash) Modifier.clickable { onCashTap(p) } else Modifier)
             Hairline()
         }
 

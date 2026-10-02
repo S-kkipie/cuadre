@@ -36,8 +36,17 @@ class PaymentNotificationListenerService : NotificationListenerService() {
 
     // Android can unbind the listener (app update, low memory) and not bring it back on its
     // own; ask to be rebound so capture does not silently stop.
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        cuadre.prefs.setListenerConnected(true)
+        cuadre.alerts.clearListenerLost()
+    }
+
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
+        // Capture silently stopping is the worst failure: tell the owner, then try to come back.
+        cuadre.prefs.setListenerConnected(false)
+        cuadre.alerts.notifyListenerLost()
         requestRebind(ComponentName(this, PaymentNotificationListenerService::class.java))
     }
 
