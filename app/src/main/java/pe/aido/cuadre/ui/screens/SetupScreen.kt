@@ -55,6 +55,10 @@ fun SetupScreen(
     voiceOn: Boolean = true,
     onVoiceChange: (Boolean) -> Unit = {},
     onTestVoice: () -> Unit = {},
+    linkedStore: String? = null,
+    sharingAvailable: Boolean = false,
+    onLink: () -> Unit = {},
+    onUnlink: () -> Unit = {},
 ) {
     val c = Cuadre.colors
     val t = Cuadre.type
@@ -76,7 +80,12 @@ fun SetupScreen(
             listOf(
                 "Solo las notificaciones de pagos que recibes en Yape y Plin.",
                 "Nunca entra a tu cuenta ni mueve dinero.",
-                "Todo se queda en tu celular.",
+                // Must stay true: once linked, payments do leave the phone (to the store only).
+                if (linkedStore == null) {
+                    "Todo se queda en tu celular."
+                } else {
+                    "Los pagos se comparten solo con los celulares de $linkedStore."
+                },
             ).forEach { line ->
                 Row(Modifier.padding(vertical = 4.dp)) {
                     Text("–", style = t.body, color = c.inkMuted)
@@ -121,6 +130,27 @@ fun SetupScreen(
                     CuadreSwitch(voiceOn, onVoiceChange)
                 }
                 TextLink("Probar voz", onTestVoice)
+
+                if (sharingAvailable) {
+                    Spacer(Modifier.height(32.dp))
+                    Text("Compartir con otros celulares", style = t.section, color = c.ink)
+                    Spacer(Modifier.height(8.dp))
+                    if (linkedStore == null) {
+                        Text(
+                            "Cada pago que confirme este celular llega al instante al dueño y a los demás celulares " +
+                                "de tu tienda, con monto, quién pagó y código. Se envía a internet solo si lo activas.",
+                            style = t.body,
+                            color = c.inkMuted,
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        OutlineButton("Vincular con mi tienda", onLink)
+                    } else {
+                        ListRow("Vinculado a $linkedStore", secondary = "Los pagos se comparten con la tienda") {
+                            Done()
+                        }
+                        TextLink("Desvincular este celular", onUnlink, muted = true)
+                    }
+                }
             }
             Spacer(Modifier.height(24.dp))
         }

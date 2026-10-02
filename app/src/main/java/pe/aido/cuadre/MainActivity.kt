@@ -34,7 +34,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import pe.aido.cuadre.sync.CuadreApi
+import pe.aido.cuadre.ui.screens.PairDialog
 import pe.aido.cuadre.core.CashClose
 import pe.aido.cuadre.core.ConfirmationPolicy
 import pe.aido.cuadre.core.IncomeCsv
@@ -186,6 +190,8 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
     var cashOpen by remember { mutableStateOf(false) }
     var closingDay by rememberSaveable { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<ConfirmedPayment?>(null) }
+    var pairOpen by remember { mutableStateOf(false) }
+    val link by app.storeLink.link.collectAsState()
 
     val onboarded by app.prefs.onboarded.collectAsState()
     val tillMode by app.prefs.tillMode.collectAsState()
@@ -214,6 +220,10 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
                 voiceOn = voice,
                 onVoiceChange = app.prefs::setVoice,
                 onTestVoice = app.alerts::testVoice,
+                linkedStore = link?.storeName,
+                sharingAvailable = CuadreApi().configured,
+                onLink = { pairOpen = true },
+                onUnlink = app.storeLink::clear,
             )
         }
 
@@ -267,7 +277,7 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
 
         if (cashOpen) CashSaleDialog(
             onAdd = { amount ->
-                scope.launch { app.repository.addCash(amount, System.currentTimeMillis()) }
+                scope.launch { app.addCash(amount, System.currentTimeMillis()) }
                 cashOpen = false
             },
             onDismiss = { cashOpen = false },
@@ -285,12 +295,18 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
             ConfirmationScreen(head, queued = pending.size - 1, onDismiss = { app.alerts.dismiss(head.id) })
         }
 
-        if (privacyOpen) PrivacyDialog { privacyOpen = false }
+        if (pairOpen) PairDialog(
+            defaultName = android.os.Build.MODEL,
+            onPair = { code, name -> pairPhone(app, code, name) },
+            onDismiss = { pairOpen = false },
+        )
+
+        if (privacyOpen) PrivacyDialog(link?.storeName) { privacyOpen = false }
     }
 }
 
 @Composable
-private fun PrivacyDialog(onClose: () -> Unit) {
+private fun PrivacyDialog(linkedStore: String?, onClose: () -> Unit) {
     AlertDialog(
         onDismissRequest = onClose,
         confirmButton = { TextButton(onClick = onClose) { Text("Entendido", color = Cuadre.colors.primary) } },
@@ -299,8 +315,17 @@ private fun PrivacyDialog(onClose: () -> Unit) {
             Text(
                 "Cuadre lee únicamente las notificaciones de pagos recibidos de Yape y de los bancos con Plin, " +
                     "para mostrarte el monto, quién pagó y la hora. No lee otras notificaciones, no accede a tus " +
-                    "cuentas, no mueve dinero y no envía tus datos a ningún servidor: todo se guarda solo en este " +
-                    "celular. Puedes quitar el acceso cuando quieras desde los ajustes del teléfono.",
+                    "cuentas y no mueve dinero. " +
+                    (
+                        if (linkedStore == null) {
+                            "No envía tus datos a ningún servidor: todo se guarda solo en este celular. "
+                        } else {
+                            "Como vinculaste este celular a $linkedStore, cada pago confirmado (monto, medio, hora, " +
+                                "quién pagó y código) se envía al servidor de Cuadre y a los celulares de tu tienda. " +
+                                "Puedes desvincularlo en Ajustes. "
+                        }
+                    ) +
+                    "Puedes quitar el acceso cuando quieras desde los ajustes del teléfono.",
                 style = Cuadre.type.body,
                 color = Cuadre.colors.ink,
             )
@@ -308,3 +333,14 @@ private fun PrivacyDialog(onClose: () -> Unit) {
         containerColor = Cuadre.colors.paper,
     )
 }
+
+/** Trades the owner's 6-digit code for this phone's store membership. Error text, or null. */
+private suspend fun pairPhone(app: CuadreApp, code: String, name: String): String? =
+    when (val r = withContext(Dispatchers.IO) { CuadreApi().pair(code, name) }) {
+        is CuadreApi.Result.Ok -> {
+            app.storeLink.save(r.value, linkedAt = System.currentTimeMillis())
+            null
+        }
+        is CuadreApi.Result.Rejected -> "Código incorrecto o vencido. Genera uno nuevo en el panel."
+        is CuadreApi.Result.Failed -> "Sin conexión. Revisa tu internet e inténtalo de nuevo."
+    }

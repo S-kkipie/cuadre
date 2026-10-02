@@ -34,6 +34,11 @@ private class FakePaymentDao : PaymentDao {
         rows.map { inRange(from, to) }
     override fun observeAll(): Flow<List<PaymentEntity>> =
         rows.map { it.sortedByDescending { p -> p.postedAtMillis } }
+    override suspend fun unsyncedSince(since: Long) =
+        rows.value.filter { !it.synced && it.postedAtMillis >= since }.sortedBy { it.postedAtMillis }
+    override suspend fun markSynced(id: String) {
+        rows.value = rows.value.map { if (it.id == id) it.copy(synced = true) else it }
+    }
     override suspend fun deleteCash(id: String): Int {
         val before = rows.value.size
         rows.value = rows.value.filterNot { it.id == id && it.wallet == "EFECTIVO" }
@@ -98,6 +103,25 @@ class PaymentRepositoryTest {
         assertEquals(false, repo.deleteCash(yape.id))
         assertEquals(true, repo.deleteCash(cash.id))
         assertEquals(listOf(yape.id), dao.rows.value.map { it.id })
+    }
+
+    @Test fun localPaymentsWaitForUploadOnlySinceLinking() = runTest {
+        val dao = FakePaymentDao()
+        val repo = PaymentRepository(dao)
+        repo.onEvent(income(10.0, 1_000L))               // before linking
+        val after = repo.onEvent(income(20.0, 5_000L))!! // after linking at t=2_000
+        assertEquals(listOf(after.id), repo.pendingUpload(since = 2_000L).map { it.id })
+        repo.markUploaded(after.id)
+        assertEquals(emptyList<String>(), repo.pendingUpload(since = 2_000L).map { it.id })
+    }
+
+    @Test fun remotePaymentIsStoredOnceAndNeverReuploaded() = runTest {
+        val dao = FakePaymentDao()
+        val repo = PaymentRepository(dao)
+        val p = income(25.0, 3_000L).let { pe.aido.cuadre.core.VerificationEngine.ConfirmedPayment("YAPE:25.00:3000", it) }
+        assertEquals(true, repo.insertRemote(p))
+        assertEquals(false, repo.insertRemote(p))        // same push twice → one payment
+        assertEquals(emptyList<String>(), repo.pendingUpload(since = 0L).map { it.id })
     }
 
     @Test fun securityCodeRoundTrips() = runTest {

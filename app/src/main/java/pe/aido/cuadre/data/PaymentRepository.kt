@@ -44,6 +44,19 @@ class PaymentRepository(private val dao: PaymentDao) {
     /** True if a cash entry was removed. Yape/Plin payments are never deletable. */
     suspend fun deleteCash(id: String): Boolean = dao.deleteCash(id) > 0
 
+    /**
+     * A payment another phone of the store confirmed. Same id as on that phone, so a push that
+     * arrives twice — or a payment this phone also captured — is stored once. Never re-uploaded.
+     * Returns true if it was new here.
+     */
+    suspend fun insertRemote(payment: ConfirmedPayment): Boolean =
+        lock.withLock { dao.insert(payment.toEntity().copy(synced = true)) != -1L }
+
+    /** Captured here since [since] (when this phone joined the store) and not yet shared. */
+    suspend fun pendingUpload(since: Long): List<ConfirmedPayment> = dao.unsyncedSince(since).map { it.toConfirmed() }
+
+    suspend fun markUploaded(id: String) = dao.markSynced(id)
+
     fun observeAll(): Flow<List<ConfirmedPayment>> =
         dao.observeAll().map { rows -> rows.map { it.toConfirmed() } }
 

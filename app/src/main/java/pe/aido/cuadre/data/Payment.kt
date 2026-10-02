@@ -1,5 +1,6 @@
 package pe.aido.cuadre.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
@@ -21,6 +22,8 @@ data class PaymentEntity(
     val postedAtMillis: Long,
     val rawText: String,
     val securityCode: String? = null,    // schema v2
+    /** Uploaded to the store, or received from it (schema v4). */
+    @ColumnInfo(defaultValue = "1") val synced: Boolean = false,
 )
 
 @Dao
@@ -41,6 +44,13 @@ interface PaymentDao {
 
     @Query("SELECT * FROM payments ORDER BY postedAtMillis DESC")
     fun observeAll(): Flow<List<PaymentEntity>>
+
+    /** Waiting to be shared with the store: captured here since linking, not yet uploaded. */
+    @Query("SELECT * FROM payments WHERE synced = 0 AND postedAtMillis >= :since ORDER BY postedAtMillis")
+    suspend fun unsyncedSince(since: Long): List<PaymentEntity>
+
+    @Query("UPDATE payments SET synced = 1 WHERE id = :id")
+    suspend fun markSynced(id: String)
 
     /**
      * Only hand-entered cash can be deleted. Listener-proven Yape/Plin payments are immutable,
@@ -73,7 +83,7 @@ interface DayCloseDao {
     suspend fun latest(): DayCloseEntity?
 }
 
-@Database(entities = [PaymentEntity::class, DayCloseEntity::class], version = 3, exportSchema = false)
+@Database(entities = [PaymentEntity::class, DayCloseEntity::class], version = 4, exportSchema = false)
 abstract class CuadreDatabase : RoomDatabase() {
     abstract fun paymentDao(): PaymentDao
     abstract fun dayCloseDao(): DayCloseDao
@@ -94,5 +104,12 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
 val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE payments ADD COLUMN securityCode TEXT")
+    }
+}
+
+/** v3 -> v4: sharing with the store. Existing payments count as already handled. */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE payments ADD COLUMN synced INTEGER NOT NULL DEFAULT 1")
     }
 }
