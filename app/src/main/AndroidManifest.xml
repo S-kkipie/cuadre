@@ -7,6 +7,26 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Package visibility (Android 11+): needed to see which wallet apps are installed and
+         check their battery restriction. Keep in sync with Wallet.packages. -->
+    <queries>
+        <package android:name="com.bcp.innovacxion.yapeapp" />
+        <package android:name="com.bbva.nxt_peru" />
+        <package android:name="pe.com.interbank.mobilebanking" />
+        <package android:name="pe.com.interbank.mpay.customer" />
+        <package android:name="pe.com.scotiabank.blpm.android.client" />
+        <package android:name="pe.com.banbif.pnappmobile" />
+        <package android:name="com.cmac.cajamovilaqp" />
+        <package android:name="com.cajaarq.p51" />
+        <package android:name="com.cmacica.prd" />
+        <package android:name="com.cajahuancayo.cajahuancayo.appcajahuancayo" />
+        <package android:name="pe.confianza.cliente" />
+        <package android:name="com.alfinbanco.appclientes" />
+        <package android:name="pe.com.tarjetasperuanasprepago.tppapp" />
+        <package android:name="com.mibanco.bancamovil" />
+        <package android:name="pe.pichincha.bm" />
+    </queries>
+
     <application
         android:name=".CuadreApp"
         android:label="Cuadre"

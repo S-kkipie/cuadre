@@ -55,6 +55,18 @@ class PaymentParserTest {
         assertTrue(e.isUsableIncome)
     }
 
+    // Real capture: Yape marketing push arriving in the same burst as payments (2026-10-02).
+    @Test fun realYapeMarketingIsIgnored() {
+        assertNull(
+            PaymentParser.parse(
+                YAPE, "¿Sin dinero en tu cuenta Yape?",
+                "¡Pide un crédito en minutos! Entra al menú >> Sección \"Créditos\" y solicítalo hoy mismo. " +
+                    "Sujeto a evaluación crediticia.",
+                1_000L,
+            ),
+        )
+    }
+
     // Real capture, BBVA Plin incoming (2026-10-02).
     @Test fun realBbvaPlinIncoming() {
         val e = PaymentParser.parse(

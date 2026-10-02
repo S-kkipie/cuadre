@@ -63,6 +63,7 @@ import pe.aido.cuadre.core.ConfirmationPolicy
 import pe.aido.cuadre.core.VerificationEngine
 import pe.aido.cuadre.core.VerificationEngine.ConfirmedPayment
 import pe.aido.cuadre.debug.DebugPayments
+import pe.aido.cuadre.setup.BatteryCheck
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -74,6 +75,7 @@ class MainActivity : ComponentActivity() {
     private val notificationsEnabled = mutableStateOf(true)
     private val tillMode = mutableStateOf(false)
     private val dayStart = mutableLongStateOf(startOfToday())
+    private val batteryStatuses = mutableStateOf<List<BatteryCheck.AppStatus>>(emptyList())
 
     private val prefs by lazy { getSharedPreferences("cuadre", Context.MODE_PRIVATE) }
 
@@ -90,6 +92,7 @@ class MainActivity : ComponentActivity() {
                     listenerEnabled = listenerEnabled.value,
                     notificationsEnabled = notificationsEnabled.value,
                     tillMode = tillMode.value,
+                    batteryStatuses = batteryStatuses.value,
                     dayStart = dayStart.longValue,
                     onTillModeChange = ::setTillMode,
                     onRequestNotifications = {
@@ -122,6 +125,7 @@ class MainActivity : ComponentActivity() {
     private fun refreshPermissions() {
         listenerEnabled.value = NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
         notificationsEnabled.value = NotificationManagerCompat.from(this).areNotificationsEnabled()
+        batteryStatuses.value = BatteryCheck.statuses(this)
     }
 
     private fun setTillMode(on: Boolean) {
@@ -159,6 +163,7 @@ private fun Today(
     listenerEnabled: Boolean,
     notificationsEnabled: Boolean,
     tillMode: Boolean,
+    batteryStatuses: List<BatteryCheck.AppStatus>,
     dayStart: Long,
     onTillModeChange: (Boolean) -> Unit,
     onRequestNotifications: () -> Unit,
@@ -187,6 +192,7 @@ private fun Today(
                 }
                 if (!listenerEnabled) item { AccessBanner() }
                 if (!notificationsEnabled) item { NotificationsBanner(onRequestNotifications) }
+                if (batteryStatuses.any { !it.unrestricted }) item { BatteryBanner(batteryStatuses) }
                 item { TotalCard(payments) }
                 item { TillModeRow(tillMode, onTillModeChange) }
                 if (BuildConfig.DEBUG) item {
@@ -335,6 +341,37 @@ private fun AccessBanner() {
                 // Prominent disclosure must be shown BEFORE this (Play policy). TODO: disclosure screen.
                 context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
             }) { Text("Activar acceso a notificaciones") }
+        }
+    }
+}
+
+@Composable
+private fun BatteryBanner(statuses: List<BatteryCheck.AppStatus>) {
+    val context = LocalContext.current
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Ahorro de batería activo", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "El celular puede congelar estas apps y los avisos de pago llegan tarde o no llegan. " +
+                    "Toca \"Arreglar\", entra a Batería y elige \"Sin restricciones\".",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            statuses.forEach { app ->
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        (if (app.unrestricted) "✅ " else "⚠️ ") + app.label,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (!app.unrestricted) {
+                        Button(onClick = { BatteryCheck.openAppSettings(context, app.packageName) }) { Text("Arreglar") }
+                    }
+                }
+            }
         }
     }
 }
