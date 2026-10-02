@@ -73,6 +73,12 @@ class PaymentRepositoryTest {
         assertEquals(0, dao.rows.value.size)
     }
 
+    @Test fun securityCodeRoundTrips() = runTest {
+        val repo = PaymentRepository(FakePaymentDao())
+        repo.onEvent(income(1.0, 1_000L).copy(securityCode = "296"))
+        assertEquals("296", repo.paymentsBetween(0L, 10_000L).single().event.securityCode)
+    }
+
     @Test fun observeMapsBackToConfirmedPayments() = runTest {
         val dao = FakePaymentDao()
         val repo = PaymentRepository(dao)

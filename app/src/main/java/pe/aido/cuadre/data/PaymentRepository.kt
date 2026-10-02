@@ -45,6 +45,7 @@ private fun PaymentEntity.toConfirmed() = ConfirmedPayment(
         direction = PaymentDirection.INCOMING,
         postedAtMillis = postedAtMillis,
         rawText = rawText,
+        securityCode = securityCode,
     ),
 )
 
@@ -55,4 +56,5 @@ private fun ConfirmedPayment.toEntity() = PaymentEntity(
     counterparty = event.counterparty,
     postedAtMillis = event.postedAtMillis,
     rawText = event.rawText,
+    securityCode = event.securityCode,
 )

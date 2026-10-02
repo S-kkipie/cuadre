@@ -8,6 +8,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "payments")
@@ -18,6 +20,7 @@ data class PaymentEntity(
     val counterparty: String?,
     val postedAtMillis: Long,
     val rawText: String,
+    val securityCode: String? = null,    // schema v2
 )
 
 @Dao
@@ -37,7 +40,14 @@ interface PaymentDao {
     fun observeBetween(from: Long, to: Long): Flow<List<PaymentEntity>>
 }
 
-@Database(entities = [PaymentEntity::class], version = 1, exportSchema = false)
+@Database(entities = [PaymentEntity::class], version = 2, exportSchema = false)
 abstract class CuadreDatabase : RoomDatabase() {
     abstract fun paymentDao(): PaymentDao
+}
+
+/** v1 -> v2: Yape security code. Keeps payments already captured. */
+val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE payments ADD COLUMN securityCode TEXT")
+    }
 }

@@ -9,7 +9,7 @@ import pe.aido.cuadre.core.PaymentParser
 import pe.aido.cuadre.domain.PaymentDirection
 import pe.aido.cuadre.domain.Wallet
 
-private const val YAPE = "com.bcp.innovacxp.yapeapp"
+private const val YAPE = "com.bcp.innovacxion.yapeapp"
 
 class PaymentParserTest {
 
@@ -42,6 +42,40 @@ class PaymentParserTest {
         assertEquals(1250.50, PaymentParser.extractAmount("S/ 1,250.50")!!, 0.001)
         assertEquals(1250.50, PaymentParser.extractAmount("S/1.250,50")!!, 0.001)
         assertEquals(8.0, PaymentParser.extractAmount("S/8")!!, 0.001)
+    }
+
+    // Real capture, Yape on Android 17 (2026-10-02).
+    @Test fun realYapeIncoming() {
+        val e = PaymentParser.parse(
+            YAPE, "Confirmación de Pago", "Yape! ADRIAN MAMANI te envió un pago por S/ 1", 1_000L,
+        )
+        assertNotNull(e)
+        assertEquals(1.0, e!!.amount, 0.001)
+        assertEquals("ADRIAN MAMANI", e.counterparty)
+        assertTrue(e.isUsableIncome)
+    }
+
+    // Real capture, BBVA Plin incoming (2026-10-02).
+    @Test fun realBbvaPlinIncoming() {
+        val e = PaymentParser.parse(
+            "com.bbva.nxt_peru", "¡Recibiste un Plin! 💸", "ADRIAN ISSAC MAMANI te plineó S/1 .", 1_000L,
+        )
+        assertNotNull(e)
+        assertEquals(Wallet.PLIN_BBVA, e!!.wallet)
+        assertEquals(1.0, e.amount, 0.001)
+        assertEquals("ADRIAN ISSAC MAMANI", e.counterparty)
+        // The body alone must read as incoming, not only thanks to the title.
+        assertNotNull(PaymentParser.parse("com.bbva.nxt_peru", null, "ADRIAN ISSAC MAMANI te plineó S/1 .", 1_000L))
+    }
+
+    // Real capture, BBVA Plin outgoing (2026-10-02). Must never count as income.
+    @Test fun realBbvaPlinOutgoingIsIgnored() {
+        val e = PaymentParser.parse(
+            "com.bbva.nxt_peru", "¡Enviaste un Plin!", "Plineaste S/1 a Adrian I Mamani Q .", 1_000L,
+        )
+        assertNull(e)
+        // Even without the title, the body alone must read as outgoing.
+        assertNull(PaymentParser.parse("com.bbva.nxt_peru", null, "Plineaste S/1 a Adrian I Mamani Q .", 1_000L))
     }
 
     @Test fun incomingWithoutPayerStillCountsIncome() {

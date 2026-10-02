@@ -168,7 +168,8 @@ private fun PaymentRow(payment: ConfirmedPayment) {
                 Text(e.counterparty ?: "Pagador no visible", style = MaterialTheme.typography.bodyLarge)
                 Text(
                     "${e.wallet.displayName} · " +
-                        Instant.ofEpochMilli(e.postedAtMillis).atZone(ZoneId.systemDefault()).format(timeFormat),
+                        Instant.ofEpochMilli(e.postedAtMillis).atZone(ZoneId.systemDefault()).format(timeFormat) +
+                        (e.securityCode?.let { " · cód. $it" } ?: ""),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

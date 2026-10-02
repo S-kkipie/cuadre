@@ -1,12 +1,15 @@
 package pe.aido.cuadre.notifications
 
+import android.content.ComponentName
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import pe.aido.cuadre.BuildConfig
 import pe.aido.cuadre.repository
 import pe.aido.cuadre.core.PaymentParser
 import pe.aido.cuadre.domain.Wallet
@@ -31,6 +34,13 @@ class PaymentNotificationListenerService : NotificationListenerService() {
         super.onDestroy()
     }
 
+    // Android can unbind the listener (app update, low memory) and not bring it back on its
+    // own; ask to be rebound so capture does not silently stop.
+    override fun onListenerDisconnected() {
+        super.onListenerDisconnected()
+        requestRebind(ComponentName(this, PaymentNotificationListenerService::class.java))
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val pkg = sbn.packageName
         if (pkg !in watchedPackages) return
@@ -38,8 +48,20 @@ class PaymentNotificationListenerService : NotificationListenerService() {
         val extras = sbn.notification.extras
         val title = extras.getCharSequence("android.title")?.toString()
         val text = extras.getCharSequence("android.text")?.toString()
+        val bigText = extras.getCharSequence("android.bigText")?.toString()
 
-        val event = PaymentParser.parse(pkg, title, text, sbn.postTime) ?: run {
+        // Debug builds: dump the raw notification so real wording can become parser fixtures.
+        if (BuildConfig.DEBUG) {
+            Log.i(
+                "CuadreListener",
+                "pkg=$pkg title=$title text=$text bigText=$bigText " +
+                    "subText=${extras.getCharSequence("android.subText")}",
+            )
+        }
+
+        // bigText is the full expanded body; android.text may be cut short (e.g. the security code).
+        val body = bigText?.takeIf { it.isNotBlank() } ?: text
+        val event = PaymentParser.parse(pkg, title, body, sbn.postTime) ?: run {
             // TODO: log an "unreadable payment notification" so the parser can be hardened.
             return
         }

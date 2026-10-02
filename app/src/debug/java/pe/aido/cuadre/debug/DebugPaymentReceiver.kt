@@ -26,7 +26,7 @@ class DebugPaymentReceiver : BroadcastReceiver() {
                     context,
                     text = text,
                     title = intent.getStringExtra("title") ?: "Yape",
-                    packageName = intent.getStringExtra("pkg") ?: "com.bcp.innovacxp.yapeapp",
+                    packageName = intent.getStringExtra("pkg") ?: "com.bcp.innovacxion.yapeapp",
                 )
                 Log.i(TAG, if (result != null) "stored ${result.id} <- \"$text\"" else "ignored <- \"$text\"")
             } finally {

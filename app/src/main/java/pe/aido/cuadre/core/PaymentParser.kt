@@ -20,11 +20,38 @@ object PaymentParser {
 
     // Incoming cues seen in Yape/Plin notifications. Extend from real captures.
     private val incomingCues = listOf(
-        "te yapearon", "te yapeó", "te yapeo", "te envió", "te envio", "recibiste", "pago recibido",
-        "recibió", "recibio", "te hizo un pago", "abono",
+        "te yapearon", "te yapeó", "te yapeo", "te ha yapeado", "te han yapeado",
+        "te plineó", "te plineo", "te plinearon", "te ha plineado", "te han plineado",
+        "te hizo un plin", "te hicieron un plin", "te llegó un plin", "te llego un plin",
+        "te envió", "te envio", "te hizo un pago", "recibiste", "pago recibido",
+        "recibió", "recibio", "abono",
     )
+    // Checked first: anything that reads as outgoing is never income, whatever else it says.
     private val outgoingCues = listOf(
-        "yapeaste", "enviaste", "pagaste", "tu pago de", "realizaste un pago",
+        "yapeaste", "plineaste", "enviaste", "pagaste", "tu pago de", "realizaste un pago",
+        "plin enviado", "fue enviado", "realizaste un plin", "hiciste un plin",
+    )
+
+    // Headers the wallet puts before the payer's name: "Confirmación de Pago:", "Yape!",
+    // "¡Plin!", "Cobro con QR:". \b keeps real names like "Plinio" intact.
+    private val namePrefix = Regex(
+        """^(?:\s*(?:confirmaci[oó]n\s+de\s+pago|cobro\s+con\s+qr|¡?\s*(?:yape|plin)\b)\s*[:!]?)+\s*""",
+        RegexOption.IGNORE_CASE,
+    )
+
+    // "<Name> te yapeó / te plineó / te envió / te hizo / te ha(n) ..."
+    private val nameBefore = Regex(
+        """^(.*?)\s+(?:te\s+(?:yape|pline|envi|hizo|hicieron|ha\s|han\s|lleg)|recib)""",
+        RegexOption.IGNORE_CASE,
+    )
+
+    // Legacy Yape: "Te yapeó S/ 10.00 de Juan Perez"
+    private val nameAfterAmount = Regex("""s/\.?\s?[\d.,]+\s+de\s+(.+)$""", RegexOption.IGNORE_CASE)
+
+    // "El cód. de seguridad es: 296"
+    private val securityCodeRegex = Regex(
+        """c[oó]d(?:igo)?\.?\s*(?:de\s+)?seguridad(?:\s+es)?\s*:?\s*(\d{3,6})""",
+        RegexOption.IGNORE_CASE,
     )
 
     // S/ 50  | S/50.00 | S/ 1,250.50
@@ -56,6 +83,7 @@ object PaymentParser {
             direction = PaymentDirection.INCOMING,
             postedAtMillis = postedAtMillis,
             rawText = raw,
+            securityCode = securityCodeRegex.find(raw)?.groupValues?.get(1),
         )
     }
 
@@ -83,9 +111,14 @@ object PaymentParser {
 
     /** Best-effort payer name; null when not clearly present. Never blocks income capture. */
     internal fun extractCounterparty(raw: String): String? {
-        // Pattern: "<Name> te yapeó/te envió ..."
-        val before = Regex("""^(.*?)\s+(te\s+(?:yape|envi|hizo)|recib)""", RegexOption.IGNORE_CASE)
-            .find(raw)?.groupValues?.getOrNull(1)?.trim()
-        return before?.takeIf { it.isNotEmpty() && it.length <= 40 && it.any(Char::isLetter) }
+        // Real Yape: "Yape! ADRIAN MAMANI te envió un pago por S/ 1"
+        // Real BBVA Plin: "ADRIAN ISSAC MAMANI te plineó S/1 ."
+        val before = nameBefore.find(raw)?.groupValues?.get(1)?.replace(namePrefix, "")?.let(::cleanName)
+        if (before != null) return before
+        return nameAfterAmount.find(raw)?.groupValues?.get(1)?.let(::cleanName)
     }
+
+    private fun cleanName(s: String): String? =
+        s.trim().trimEnd('.', '!', ' ').trim()
+            .takeIf { it.isNotEmpty() && it.length <= 40 && it.any(Char::isLetter) }
 }
