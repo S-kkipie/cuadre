@@ -8,6 +8,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "payments")
 data class PaymentEntity(
@@ -30,6 +31,10 @@ interface PaymentDao {
 
     @Query("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE postedAtMillis BETWEEN :from AND :to")
     suspend fun totalBetween(from: Long, to: Long): Double
+
+    /** Live view for the UI; re-emits whenever a payment is inserted. */
+    @Query("SELECT * FROM payments WHERE postedAtMillis BETWEEN :from AND :to ORDER BY postedAtMillis DESC")
+    fun observeBetween(from: Long, to: Long): Flow<List<PaymentEntity>>
 }
 
 @Database(entities = [PaymentEntity::class], version = 1, exportSchema = false)
