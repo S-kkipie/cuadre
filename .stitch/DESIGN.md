@@ -1,14 +1,15 @@
 ---
-name: Cuadre — monochrome
+name: Cuadre — ink + terracotta
 colors:
   paper: '#ffffff'
-  ink: '#111111'             # text, primary buttons, active nav, switch
+  ink: '#111111'             # text
+  primary: '#b4532a'         # terracotta brand: wordmark, primary buttons, links, active nav, switch (white on it 5.0:1)
   ink-muted: '#6b6b6b'       # labels, secondary lines, inactive nav
   hairline: '#eaeaea'        # row dividers, outlined buttons
   disabled-fill: '#e6e6e6'
   disabled-ink: '#8a8a8a'
   paid: '#0b7a3b'            # ONLY: confirmation flood + live "Escuchando" dot + "Listo ✓" status
-  stale: '#9a5b00'           # ONLY: "Pago anterior" flood + pending-setup line
+  stale: '#8c6a00'           # ONLY: "Pago anterior" flood + pending-setup line (dark mustard, kept apart from terracotta)
   on-flood: '#ffffff'
   on-flood-muted: 'rgba(255,255,255,0.70)'
 typography:                   # Geist only. Tabular figures on every amount.
@@ -39,7 +40,8 @@ complicated"; archived in `designs/v1-descartado/`). Audited against Hallmark's 
 
 ## Principle
 Minimalism with conviction (Stripe / Linear / Apple Wallet school). Typography and whitespace do
-the work. Color is a signal, never decoration: green = real money arrived, amber = old payment.
+the work. One brand color (terracotta) marks the brand and every action; green = real money arrived
+and mustard = old payment are signals only, never decoration.
 
 ## Rules
 - **One family: Geist.** Hierarchy by size and weight only. Sentence case everywhere — no
@@ -47,11 +49,11 @@ the work. Color is a signal, never decoration: green = real money arrived, amber
 - **No cards on lists.** Plain rows, 1px hairline dividers, left-aligned text, amounts right in
   tabular figures. No leading icon tiles, avatars, badges, chips or "Nuevo" tags.
 - **One action per row.** No redundant buttons (e.g. no global "Arreglar" when each app has one).
-- **Buttons:** primary = ink fill + white text, 56dp, full width, bottom of screen; secondary =
-  white with ink 1px outline, compact; links = underlined ink text. No arrows on buttons, no
+- **Buttons:** primary = terracotta fill + white text, 56dp, full width, bottom of screen; secondary =
+  white with terracotta 1px outline, compact; links = underlined terracotta text. No arrows on buttons, no
   captions under buttons.
-- **Nav:** hairline on top, thin line icons, active item = ink + semibold, inactive = muted. No
-  filled pill.
+- **Nav:** hairline on top, thin line icons, active item = terracotta + semibold with a short
+  underline, inactive = muted. No filled pill, no icons.
 - **No** shadows, gradients, glass, progress bars, decorative icons, wallet/bank logos or brand
   colors. Unknown payer: "Pagador no visible" in muted italic (body text, not a heading).
 

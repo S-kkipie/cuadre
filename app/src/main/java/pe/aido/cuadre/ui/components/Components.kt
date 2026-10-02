@@ -46,7 +46,7 @@ fun Hairline(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().height(1.dp).background(Cuadre.colors.hairline))
 }
 
-/** Full-width 56dp primary action. Ink on paper; white with ink text on a color flood. */
+/** Full-width 56dp primary action. Brand fill on paper; white with ink text on a color flood. */
 @Composable
 fun PrimaryButton(
     text: String,
@@ -59,12 +59,12 @@ fun PrimaryButton(
     val fill = when {
         !enabled -> c.disabledFill
         onFlood -> c.paper
-        else -> c.ink
+        else -> c.primary
     }
     val label = when {
         !enabled -> c.disabledInk
         onFlood -> c.ink
-        else -> c.paper
+        else -> c.onPrimary
     }
     Box(
         modifier
@@ -77,7 +77,7 @@ fun PrimaryButton(
     ) { Text(text, style = Cuadre.type.button, color = label) }
 }
 
-/** Compact secondary action: white with a 1px ink outline. */
+/** Compact secondary action: white with a 1px brand outline. */
 @Composable
 fun OutlineButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val c = Cuadre.colors
@@ -85,14 +85,14 @@ fun OutlineButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
         modifier
             .heightIn(min = 48.dp)
             .clip(ButtonShape)
-            .border(1.dp, c.ink, ButtonShape)
+            .border(1.dp, c.primary, ButtonShape)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 20.dp),
         contentAlignment = Alignment.Center,
-    ) { Text(text, style = Cuadre.type.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink) }
+    ) { Text(text, style = Cuadre.type.body.copy(fontWeight = FontWeight.SemiBold), color = c.primary) }
 }
 
-/** Underlined ink text with a 48dp touch target. */
+/** Brand-colored text link with a 48dp touch target; `muted` = quiet grey for low-priority links. */
 @Composable
 fun TextLink(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, muted: Boolean = false) {
     val c = Cuadre.colors
@@ -106,7 +106,7 @@ fun TextLink(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, m
                 fontWeight = if (muted) FontWeight.Normal else FontWeight.SemiBold,
                 textDecoration = if (muted) null else TextDecoration.Underline,
             ),
-            color = if (muted) c.inkMuted else c.ink,
+            color = if (muted) c.inkMuted else c.primary,
         )
     }
 }
@@ -175,7 +175,7 @@ fun CuadreSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
         checked = checked,
         onCheckedChange = onCheckedChange,
         colors = SwitchDefaults.colors(
-            checkedThumbColor = c.paper, checkedTrackColor = c.ink, checkedBorderColor = c.ink,
+            checkedThumbColor = c.onPrimary, checkedTrackColor = c.primary, checkedBorderColor = c.primary,
             uncheckedThumbColor = c.inkMuted, uncheckedTrackColor = c.paper, uncheckedBorderColor = c.inkMuted,
         ),
     )
@@ -189,7 +189,7 @@ fun StatusDot(color: Color, modifier: Modifier = Modifier) {
 
 enum class Tab(val label: String) { Hoy("Hoy"), Historial("Historial"), Ajustes("Ajustes") }
 
-/** Text-only bottom navigation: active = ink + semibold, inactive = muted. No pill, no icons. */
+/** Text-only bottom navigation: active = brand + semibold with a short underline; inactive = muted. */
 @Composable
 fun BottomNav(selected: Tab, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
     val c = Cuadre.colors
@@ -203,11 +203,18 @@ fun BottomNav(selected: Tab, onSelect: (Tab) -> Unit, modifier: Modifier = Modif
                         .clickable(role = Role.Tab) { onSelect(tab) },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        tab.label,
-                        style = Cuadre.type.body.copy(fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal),
-                        color = if (active) c.ink else c.inkMuted,
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            tab.label,
+                            style = Cuadre.type.body.copy(fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal),
+                            color = if (active) c.primary else c.inkMuted,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Box(
+                            Modifier.width(20.dp).height(2.dp).clip(CircleShape)
+                                .background(if (active) c.primary else Color.Transparent),
+                        )
+                    }
                 }
             }
         }

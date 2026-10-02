@@ -16,20 +16,23 @@ import androidx.compose.ui.unit.sp
 import pe.aido.cuadre.R
 
 /**
- * Cuadre — monochrome. Source of truth: .stitch/DESIGN.md.
- * Color is a signal, never decoration: [CuadreColors.paid] means real money arrived,
- * [CuadreColors.stale] means an old payment or a pending setup step. Everything else is ink.
+ * Cuadre — ink on paper with one brand color. Source of truth: .stitch/DESIGN.md.
+ * [CuadreColors.primary] (terracotta) is the brand and every action. [CuadreColors.paid] means
+ * real money arrived, [CuadreColors.stale] means an old payment or a pending setup step — those
+ * two are signals and never used for decoration. Everything else is ink.
  */
 @Immutable
 data class CuadreColors(
     val paper: Color = Color(0xFFFFFFFF),
     val ink: Color = Color(0xFF111111),
+    val primary: Color = Color(0xFFB4532A),      // terracotta; white on it = 5.0:1
+    val onPrimary: Color = Color(0xFFFFFFFF),
     val inkMuted: Color = Color(0xFF6B6B6B),
     val hairline: Color = Color(0xFFEAEAEA),
     val disabledFill: Color = Color(0xFFE6E6E6),
     val disabledInk: Color = Color(0xFF8A8A8A),
     val paid: Color = Color(0xFF0B7A3B),
-    val stale: Color = Color(0xFF9A5B00),
+    val stale: Color = Color(0xFF8C6A00),        // dark mustard, kept apart from terracotta
     val onFlood: Color = Color(0xFFFFFFFF),
     val onFloodMuted: Color = Color(0xB3FFFFFF),
 )
@@ -71,9 +74,9 @@ object Cuadre {
 @Composable
 fun CuadreTheme(content: @Composable () -> Unit) {
     val c = CuadreColors()
-    // Material components we still use (Switch, ripple) get ink, not Material's default purple.
+    // Material components we still use (Switch, ripple, dialogs) get the brand, not Material's purple.
     val scheme = lightColorScheme(
-        primary = c.ink, onPrimary = c.paper,
+        primary = c.primary, onPrimary = c.onPrimary,
         secondary = c.ink, onSecondary = c.paper,
         background = c.paper, onBackground = c.ink,
         surface = c.paper, onSurface = c.ink, onSurfaceVariant = c.inkMuted,

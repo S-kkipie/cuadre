@@ -76,6 +76,7 @@ class PaymentAlerts(private val context: Context) {
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_pago)
+            .setColor(BRAND_COLOR)
             .setContentTitle("Pago recibido: ${soles(e.amount)}")
             .setContentText(detail)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -94,6 +95,7 @@ class PaymentAlerts(private val context: Context) {
 
     companion object {
         const val CHANNEL_ID = "pagos_recibidos"
+        private const val BRAND_COLOR = 0xFFB4532A.toInt() // keep in sync with CuadreColors.primary
         val VIBRATION_PATTERN = longArrayOf(0, 180, 90, 320)
         private val TIME = DateTimeFormatter.ofPattern("HH:mm:ss")
 

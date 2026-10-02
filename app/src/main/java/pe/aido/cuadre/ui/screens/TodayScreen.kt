@@ -56,7 +56,7 @@ fun TodayScreen(
         item {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f)) {
-                    Text("Cuadre", style = t.wordmark, color = c.ink)
+                    Text("Cuadre", style = t.wordmark, color = c.primary)
                     Spacer(Modifier.height(6.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         StatusDot(if (listening) c.paid else c.stale)
@@ -118,7 +118,7 @@ fun TodayScreen(
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Pagos", style = t.section, color = c.ink, modifier = Modifier.weight(1f))
-                TextLink("Historial", onOpenHistory, muted = true)
+                TextLink("Historial", onOpenHistory)
             }
         }
 

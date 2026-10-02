@@ -225,7 +225,7 @@ private fun App(
 private fun PrivacyDialog(onClose: () -> Unit) {
     AlertDialog(
         onDismissRequest = onClose,
-        confirmButton = { TextButton(onClick = onClose) { Text("Entendido", color = Cuadre.colors.ink) } },
+        confirmButton = { TextButton(onClick = onClose) { Text("Entendido", color = Cuadre.colors.primary) } },
         title = { Text("Privacidad", style = Cuadre.type.section, color = Cuadre.colors.ink) },
         text = {
             Text(
