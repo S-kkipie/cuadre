@@ -4,7 +4,7 @@ import android.content.Context
 import pe.aido.cuadre.core.PaymentParser
 import pe.aido.cuadre.core.VerificationEngine.ConfirmedPayment
 import pe.aido.cuadre.domain.Wallet
-import pe.aido.cuadre.repository
+import pe.aido.cuadre.cuadre
 
 /**
  * Debug-only stand-in for a real wallet notification. Goes through the same parser and
@@ -26,6 +26,6 @@ object DebugPayments {
         packageName: String = Wallet.YAPE.packages.first(),
     ): ConfirmedPayment? {
         val event = PaymentParser.parse(packageName, title, text, System.currentTimeMillis()) ?: return null
-        return context.repository.onEvent(event)
+        return context.cuadre.capture(event)
     }
 }

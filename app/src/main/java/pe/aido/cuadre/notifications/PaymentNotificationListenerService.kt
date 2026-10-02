@@ -10,7 +10,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import pe.aido.cuadre.BuildConfig
-import pe.aido.cuadre.repository
+import pe.aido.cuadre.cuadre
 import pe.aido.cuadre.core.PaymentParser
 import pe.aido.cuadre.domain.Wallet
 
@@ -66,7 +66,7 @@ class PaymentNotificationListenerService : NotificationListenerService() {
             return
         }
 
-        // The UI observes Room, so storing is enough to show it. TODO: anti-fraud confirmation (D7).
-        scope.launch { repository.onEvent(event) }
+        // Stores it (the list observes Room) and fires the full-screen / urgent confirmation.
+        scope.launch { cuadre.capture(event) }
     }
 }
