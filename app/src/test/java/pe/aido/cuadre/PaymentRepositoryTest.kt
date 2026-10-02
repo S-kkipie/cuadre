@@ -32,6 +32,8 @@ private class FakePaymentDao : PaymentDao {
     override suspend fun totalBetween(from: Long, to: Long) = inRange(from, to).sumOf { it.amount }
     override fun observeBetween(from: Long, to: Long): Flow<List<PaymentEntity>> =
         rows.map { inRange(from, to) }
+    override fun observeAll(): Flow<List<PaymentEntity>> =
+        rows.map { it.sortedByDescending { p -> p.postedAtMillis } }
 }
 
 class PaymentRepositoryTest {

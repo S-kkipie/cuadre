@@ -31,6 +31,9 @@ class PaymentRepository(private val dao: PaymentDao) {
     fun observeBetween(from: Long, to: Long): Flow<List<ConfirmedPayment>> =
         dao.observeBetween(from, to).map { rows -> rows.map { it.toConfirmed() } }
 
+    fun observeAll(): Flow<List<ConfirmedPayment>> =
+        dao.observeAll().map { rows -> rows.map { it.toConfirmed() } }
+
     suspend fun paymentsBetween(from: Long, to: Long): List<ConfirmedPayment> =
         dao.between(from, to).map { it.toConfirmed() }
 }

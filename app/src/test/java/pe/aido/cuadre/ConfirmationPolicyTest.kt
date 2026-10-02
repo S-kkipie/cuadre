@@ -24,6 +24,18 @@ class ConfirmationPolicyTest {
         assertTrue(ConfirmationPolicy.isFresh(postedAtMillis = 102_000L, nowMillis = 100_000L))
     }
 
+    @Test fun newestPaymentIsShownFirst() {
+        fun p(at: Long) = pe.aido.cuadre.core.VerificationEngine.ConfirmedPayment(
+            "id$at",
+            pe.aido.cuadre.domain.PaymentEvent(
+                pe.aido.cuadre.domain.Wallet.YAPE, 1.0, null, pe.aido.cuadre.domain.PaymentDirection.INCOMING, at, "raw",
+            ),
+        )
+        // The customer in front of you paid last; an older queued payment must not hide it.
+        assertEquals("id300", ConfirmationPolicy.next(listOf(p(100), p(300), p(200)))?.id)
+        assertEquals(null, ConfirmationPolicy.next(emptyList()))
+    }
+
     @Test fun ageLabel() {
         assertEquals("ahora", ConfirmationPolicy.ageLabel(100_000L, 100_400L))
         assertEquals("hace 12 s", ConfirmationPolicy.ageLabel(100_000L, 112_000L))

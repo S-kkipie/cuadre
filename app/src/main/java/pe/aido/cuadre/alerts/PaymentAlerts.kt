@@ -35,8 +35,14 @@ class PaymentAlerts(private val context: Context) {
     /** Confirmations waiting to be shown full-screen, oldest first. */
     val pending: StateFlow<List<ConfirmedPayment>> = _pending
 
-    /** Set by MainActivity on start/stop. */
-    @Volatile var uiVisible: Boolean = false
+    // Counted, not a flag: if two activity instances overlap (relaunch, notification tap), the
+    // old one's onStop must not mark the app hidden while the new one is on screen.
+    private val visibleScreens = java.util.concurrent.atomic.AtomicInteger(0)
+
+    val uiVisible: Boolean get() = visibleScreens.get() > 0
+
+    fun onScreenStarted() { visibleScreens.incrementAndGet() }
+    fun onScreenStopped() { visibleScreens.updateAndGet { (it - 1).coerceAtLeast(0) } }
 
     fun announce(payment: ConfirmedPayment) {
         if (uiVisible) _pending.update { it + payment } else postNotification(payment)

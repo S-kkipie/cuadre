@@ -12,6 +12,10 @@ object ConfirmationPolicy {
     fun isFresh(postedAtMillis: Long, nowMillis: Long): Boolean =
         nowMillis - postedAtMillis <= FRESH_WINDOW_MILLIS
 
+    /** Which queued confirmation to show: the newest, i.e. the customer in front of you. */
+    fun next(pending: List<VerificationEngine.ConfirmedPayment>): VerificationEngine.ConfirmedPayment? =
+        pending.maxByOrNull { it.event.postedAtMillis }
+
     fun ageLabel(postedAtMillis: Long, nowMillis: Long): String {
         val seconds = ((nowMillis - postedAtMillis) / 1000).coerceAtLeast(0)
         return when {

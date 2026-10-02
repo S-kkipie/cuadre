@@ -38,6 +38,9 @@ interface PaymentDao {
     /** Live view for the UI; re-emits whenever a payment is inserted. */
     @Query("SELECT * FROM payments WHERE postedAtMillis BETWEEN :from AND :to ORDER BY postedAtMillis DESC")
     fun observeBetween(from: Long, to: Long): Flow<List<PaymentEntity>>
+
+    @Query("SELECT * FROM payments ORDER BY postedAtMillis DESC")
+    fun observeAll(): Flow<List<PaymentEntity>>
 }
 
 @Database(entities = [PaymentEntity::class], version = 2, exportSchema = false)
