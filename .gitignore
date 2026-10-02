@@ -21,3 +21,7 @@ captures/
 # Secrets
 keystore.properties
 *.jks
+
+# Firebase config: not a secret, but this repo is public.
+app/google-services.json
+
