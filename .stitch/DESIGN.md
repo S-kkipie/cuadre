@@ -52,7 +52,7 @@ and mustard = old payment are signals only, never decoration.
 - **Buttons:** primary = terracotta fill + white text, 56dp, full width, bottom of screen; secondary =
   white with terracotta 1px outline, compact; links = underlined terracotta text. No arrows on buttons, no
   captions under buttons.
-- **Nav:** hairline on top, thin line icons, active item = terracotta + semibold with a short
+- **Nav:** hairline on top, text labels only, active item = terracotta + semibold with a short
   underline, inactive = muted. No filled pill, no icons.
 - **No** shadows, gradients, glass, progress bars, decorative icons, wallet/bank logos or brand
   colors. Unknown payer: "Pagador no visible" in muted italic (body text, not a heading).
