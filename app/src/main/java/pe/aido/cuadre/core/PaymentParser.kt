@@ -20,7 +20,7 @@ object PaymentParser {
 
     // Incoming cues seen in Yape/Plin notifications. Extend from real captures.
     private val incomingCues = listOf(
-        "te yapearon", "te envió", "te envio", "recibiste", "pago recibido",
+        "te yapearon", "te yapeó", "te yapeo", "te envió", "te envio", "recibiste", "pago recibido",
         "recibió", "recibio", "te hizo un pago", "abono",
     )
     private val outgoingCues = listOf(
@@ -46,7 +46,8 @@ object PaymentParser {
         if (direction != PaymentDirection.INCOMING) return null
 
         val amount = extractAmount(raw) ?: return null
-        val counterparty = extractCounterparty(raw)
+        // Payer comes from the body only; the title is usually the app/header ("Yape").
+        val counterparty = text?.trim()?.let(::extractCounterparty)
 
         return PaymentEvent(
             wallet = wallet,
@@ -71,7 +72,9 @@ object PaymentParser {
         val hasComma = t.contains(',')
         val hasDot = t.contains('.')
         val normalized = when {
-            hasComma && hasDot -> t.replace(",", "")                 // 1,250.50
+            // Both present: whichever comes last is the decimal separator.
+            hasComma && hasDot && t.lastIndexOf('.') > t.lastIndexOf(',') -> t.replace(",", "") // 1,250.50
+            hasComma && hasDot -> t.replace(".", "").replace(",", ".")                            // 1.250,50
             hasComma && !hasDot -> t.replace(".", "").replace(",", ".") // 1.250,50 or 1250,50
             else -> t
         }

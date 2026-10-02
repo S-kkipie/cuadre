@@ -10,7 +10,7 @@
         android:name=".CuadreApp"
         android:label="Cuadre"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Material3.DynamicColors.DayNight">
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity
             android:name=".MainActivity"
