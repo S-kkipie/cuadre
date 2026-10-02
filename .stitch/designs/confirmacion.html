@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 
-<html class="h-full" lang="es"><head>
+<html lang="es"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-<title>Cuadre - Pago Recibido</title>
+<title>Cuadre - Pago recibido v2</title>
+<!-- Google Fonts: Geist & Material Symbols -->
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script id="tailwind-config">
     tailwind.config = {
@@ -16,53 +18,53 @@
       theme: {
         extend: {
           "colors": {
-            "surface-container-highest": "#e2e3e0",
-            "tertiary": "#a11813",
-            "on-background": "#1a1c1b",
-            "on-tertiary": "#ffffff",
-            "primary-container": "#0b7a3b",
-            "surface-container": "#eeeeeb",
-            "on-secondary-fixed": "#2c1600",
-            "inverse-primary": "#7adb90",
-            "secondary-container": "#fdad55",
-            "surface-container-high": "#e8e8e5",
-            "on-tertiary-container": "#ffe5e1",
-            "on-tertiary-fixed": "#410001",
             "on-primary": "#ffffff",
-            "surface-bright": "#f9f9f6",
-            "surface": "#f9f9f6",
-            "on-primary-fixed-variant": "#005225",
+            "surface-tint": "#5f5e5e",
             "on-error-container": "#93000a",
-            "background": "#f9f9f6",
-            "on-tertiary-fixed-variant": "#910809",
-            "on-surface": "#1a1c1b",
-            "on-secondary-fixed-variant": "#693c00",
-            "secondary-fixed": "#ffdcbd",
-            "outline": "#6f7a6e",
-            "on-primary-fixed": "#00210b",
-            "error": "#ba1a1a",
-            "tertiary-fixed-dim": "#ffb4aa",
-            "on-secondary-container": "#714200",
-            "surface-tint": "#006d33",
-            "surface-container-low": "#f4f4f1",
-            "on-primary-container": "#a4ffb5",
-            "surface-dim": "#dadad7",
-            "surface-container-lowest": "#ffffff",
-            "secondary-fixed-dim": "#ffb86e",
-            "inverse-on-surface": "#f1f1ee",
+            "tertiary-fixed": "#ffdcbd",
+            "on-primary-fixed-variant": "#474646",
+            "surface-dim": "#dadada",
+            "on-primary-fixed": "#1c1b1b",
             "on-error": "#ffffff",
+            "tertiary": "#000000",
             "on-secondary": "#ffffff",
-            "primary-fixed-dim": "#7adb90",
+            "on-tertiary": "#ffffff",
+            "on-secondary-fixed": "#00210b",
+            "primary-fixed-dim": "#c8c6c5",
+            "on-tertiary-container": "#b97420",
+            "surface-container-high": "#e8e8e8",
+            "on-tertiary-fixed": "#2c1600",
+            "inverse-on-surface": "#f0f1f1",
+            "secondary-container": "#96f8aa",
+            "surface-bright": "#f9f9f9",
+            "background": "#f9f9f9",
+            "primary": "#000000",
+            "on-background": "#1a1c1c",
+            "secondary-fixed": "#96f8aa",
+            "inverse-primary": "#c8c6c5",
+            "on-tertiary-fixed-variant": "#693c00",
+            "on-surface": "#1a1c1c",
+            "on-secondary-container": "#007436",
+            "on-primary-container": "#858383",
+            "error": "#ba1a1a",
+            "surface-container": "#eeeeee",
+            "primary-fixed": "#e5e2e1",
+            "on-secondary-fixed-variant": "#005225",
+            "outline": "#747878",
+            "secondary": "#006d33",
+            "primary-container": "#1c1b1b",
+            "tertiary-fixed-dim": "#ffb86e",
+            "surface-container-lowest": "#ffffff",
+            "inverse-surface": "#2f3131",
+            "surface": "#f9f9f9",
+            "surface-variant": "#e2e2e2",
+            "outline-variant": "#c4c7c7",
+            "tertiary-container": "#2c1600",
+            "secondary-fixed-dim": "#7adb90",
             "error-container": "#ffdad6",
-            "inverse-surface": "#2f312f",
-            "surface-variant": "#e2e3e0",
-            "tertiary-container": "#c43328",
-            "on-surface-variant": "#3f493f",
-            "primary-fixed": "#96f8aa",
-            "tertiary-fixed": "#ffdad5",
-            "secondary": "#8a5100",
-            "primary": "#005f2b",
-            "outline-variant": "#becabc"
+            "surface-container-low": "#f3f3f4",
+            "surface-container-highest": "#e2e2e2",
+            "on-surface-variant": "#444748"
           },
           "borderRadius": {
             "DEFAULT": "0.25rem",
@@ -71,46 +73,87 @@
             "full": "9999px"
           },
           "spacing": {
-            "space-md": "1rem",
-            "space-lg": "1.5rem",
-            "space-xs": "0.25rem",
             "space-xl": "2rem",
-            "gutter": "1rem",
+            "space-lg": "1.5rem",
             "margin": "1rem",
-            "space-sm": "0.5rem"
+            "space-md": "1rem",
+            "space-sm": "0.5rem",
+            "gutter": "1rem",
+            "space-xs": "0.25rem"
           },
           "fontFamily": {
-            "body-md": ["Public Sans", "sans-serif"],
-            "label-lg": ["Public Sans", "sans-serif"],
-            "headline-md": ["Plus Jakarta Sans", "sans-serif"],
-            "headline-lg": ["Plus Jakarta Sans", "sans-serif"],
-            "body-lg": ["Public Sans", "sans-serif"],
-            "display": ["Plus Jakarta Sans", "sans-serif"],
-            "label-md": ["Public Sans", "sans-serif"]
+            "display": ["Geist", "sans-serif"],
+            "label-lg": ["Geist", "sans-serif"],
+            "body-md": ["Geist", "sans-serif"],
+            "body-lg": ["Geist", "sans-serif"],
+            "label-md": ["Geist", "sans-serif"],
+            "headline-md": ["Geist", "sans-serif"],
+            "headline-lg": ["Geist", "sans-serif"]
           },
           "fontSize": {
-            "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
-            "label-lg": ["16px", { "lineHeight": "20px", "fontWeight": "600" }],
-            "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
-            "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
-            "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
-            "display": ["64px", { "lineHeight": "72px", "fontWeight": "700" }],
-            "label-md": ["14px", { "lineHeight": "18px", "fontWeight": "600" }]
+            "display": [
+              "64px",
+              {
+                "lineHeight": "72px",
+                "fontWeight": "700"
+              }
+            ],
+            "label-lg": [
+              "16px",
+              {
+                "lineHeight": "20px",
+                "fontWeight": "600"
+              }
+            ],
+            "body-md": [
+              "16px",
+              {
+                "lineHeight": "24px",
+                "fontWeight": "400"
+              }
+            ],
+            "body-lg": [
+              "18px",
+              {
+                "lineHeight": "26px",
+                "fontWeight": "400"
+              }
+            ],
+            "label-md": [
+              "14px",
+              {
+                "lineHeight": "18px",
+                "fontWeight": "600"
+              }
+            ],
+            "headline-md": [
+              "24px",
+              {
+                "lineHeight": "32px",
+                "fontWeight": "600"
+              }
+            ],
+            "headline-lg": [
+              "32px",
+              {
+                "lineHeight": "40px",
+                "fontWeight": "700"
+              }
+            ]
           }
         },
       },
     }
   </script>
 <style>
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz' 48;
-    }
-    @keyframes subtle-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.85; transform: scale(1.02); }
-    }
-    .animate-badge-pop {
-      animation: subtle-pulse 3s ease-in-out infinite;
+    body {
+      background-color: #0B7A3B;
+      color: #ffffff;
+      font-family: 'Geist', sans-serif;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
   </style>
 <style>
@@ -119,95 +162,52 @@
     }
   </style>
   </head>
-<body class="bg-primary-container h-full m-0 p-0 text-on-primary select-none antialiased overflow-x-hidden selection:bg-surface-container-lowest selection:text-primary-container">
-<!-- Mobile Viewport Container: 360dp width calibrated -->
-<main class="w-full max-w-sm mx-auto min-h-screen flex flex-col justify-between px-space-lg py-6 bg-primary-container relative">
-<!-- 1. Top Section: Verification status pill and timestamp -->
-<header class="w-full flex flex-col items-center pt-2">
-<!-- Live verification banner pill -->
-<div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container-lowest/15 backdrop-blur-md border border-surface-container-lowest/20 shadow-sm">
-<span class="w-2 h-2 rounded-full bg-primary-fixed animate-ping"></span>
-<span class="font-label-md text-label-md text-on-primary font-medium tracking-tight">Notificación verificada por Cuadre</span>
-<span class="material-symbols-outlined text-[16px] text-primary-fixed" data-icon="verified_user">verified_user</span>
+<body class="bg-[#0B7A3B] text-white selection:bg-white selection:text-[#0B7A3B]">
+<!-- Target device container: mobile viewport ~390px max-width, vertically full -->
+<main class="w-full max-w-[390px] mx-auto min-h-screen h-full flex flex-col justify-between px-[28px] pt-[40px] pb-[32px] box-border">
+<!-- Top Section (Strictly left-aligned, zero containers, zero badges) -->
+<header class="w-full text-left">
+<div class="flex items-center gap-1.5 text-white font-medium text-base">
+<!-- Clean unencapsulated checkmark icon -->
+<span class="material-symbols-outlined text-[20px] leading-none" data-icon="check" style="font-variation-settings: 'wght' 600;">check</span>
+<span class="leading-none tracking-normal">Pago recibido</span>
 </div>
+<p class="text-white/70 text-sm mt-1.5 font-normal leading-normal">
+        Yape · 14:32:07
+      </p>
 </header>
-<!-- 2 & 3 & 4 & 5. Central Payment Evidence Core (Visible at 2 meters across the counter) -->
-<section class="w-full flex flex-col items-center text-center my-auto py-2">
-<!-- Big Check Icon Badge -->
-<div class="relative mb-3 animate-badge-pop">
-<div class="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center shadow-lg shadow-black/10">
-<span class="material-symbols-outlined text-primary-container text-4xl leading-none" data-icon="check" data-weight="fill" style="font-variation-settings: 'FILL' 1, 'wght' 700;">check</span>
-</div>
-</div>
-<!-- Headline Label -->
-<p class="font-headline-md text-label-lg font-bold tracking-[0.2em] text-on-primary text-opacity-95 mb-1">
-        PAGO RECIBIDO
+<!-- Middle / Core Amount Section (Vertically balanced, pure type layout) -->
+<section class="w-full text-left my-auto py-8">
+<!-- Amount -->
+<h1 class="text-white text-[68px] leading-[72px] font-bold tracking-tight tabular-nums m-0 p-0 font-display">
+        S/ 25.00
+      </h1>
+<!-- Payer -->
+<p class="text-white text-2xl font-normal mt-2 leading-tight">
+        Rosa Huamán
       </p>
-<!-- The Massive Amount Display -->
-<div class="w-full my-1">
-<h1 class="font-display text-display text-on-primary font-extrabold tracking-tight tabular-nums drop-shadow-sm">
-          S/ 25.00
-        </h1>
+<!-- Security Code Group (No card background, strictly pure type) -->
+<div class="mt-9">
+<span class="block text-white/70 text-sm font-normal">
+          Código de seguridad
+        </span>
+<span class="block text-white text-5xl font-semibold tracking-[0.25em] tabular-nums mt-1 font-display">
+          418
+        </span>
 </div>
-<!-- Payer Name -->
-<h2 class="font-headline-md text-headline-md font-bold text-on-primary tracking-wide uppercase mt-1 px-2 line-clamp-1">
-        ROSA HUAMAN
-      </h2>
-<!-- Metadata Line -->
-<div class="flex items-center justify-center gap-1.5 text-on-primary/85 font-body-md text-label-md mt-1">
-<span class="font-semibold text-primary-fixed">Yape</span>
-<span>•</span>
-<span class="tabular-nums">14:32:07</span>
-<span>•</span>
-<span class="text-on-primary/75">hace 3 s</span>
-</div>
-<!-- 5. Security Code Block (Crucial Anti-Fraud Tool) -->
-<div class="w-full max-w-[280px] mt-6 bg-surface-container-lowest/15 backdrop-blur-md rounded-xl p-3.5 border border-surface-container-lowest/30 shadow-inner">
-<div class="flex items-center justify-center gap-1 mb-0.5">
-<span class="material-symbols-outlined text-sm text-on-primary/90" data-icon="pin">pin</span>
-<span class="font-label-md text-[11px] font-bold tracking-widest text-on-primary/90 uppercase">
-            CÓDIGO DE SEGURIDAD
-          </span>
-</div>
-<!-- Huge digits for verbal confirmation -->
-<div class="font-headline-lg text-4xl font-extrabold tracking-[0.35em] text-on-primary text-center pl-3 py-0.5 tabular-nums">
-          4 1 8
-        </div>
-<p class="text-[11px] font-body-md text-on-primary/80 tracking-tight">
-          Verifica estos 3 dígitos con el cliente
-        </p>
-</div>
+<!-- Elapsed time -->
+<p class="text-white/70 text-sm font-normal mt-3.5">
+        hace 3 segundos
+      </p>
 </section>
-<!-- 6 & 7. Bottom Action Zone -->
-<footer class="w-full flex flex-col items-center pb-2">
-<!-- Queue Indicator Pill -->
-<div class="inline-flex items-center gap-2 bg-on-background/25 border border-surface-container-lowest/25 px-4 py-1.5 rounded-full text-on-primary text-label-md font-medium mb-4 backdrop-blur-sm">
-<span class="material-symbols-outlined text-base text-primary-fixed" data-icon="layers">layers</span>
-<span>+1 pago más en espera</span>
-</div>
-<!-- Primary Confirmation Button: 56dp height, high thumb ergonomic -->
-<button class="w-full h-14 bg-surface-container-lowest active:bg-surface-container text-primary-container font-headline-md font-bold text-lg rounded-xl shadow-lg active:scale-95 transition-transform duration-150 flex items-center justify-center gap-2" id="dismissButton" type="button">
-<span>Listo</span>
-<span class="material-symbols-outlined text-xl" data-icon="arrow_forward">arrow_forward</span>
-</button>
-<!-- Fast counter instruction for merchant -->
-<p class="font-label-md text-[12px] text-on-primary/70 text-center mt-2.5">
-        Toca Listo o la pantalla para ver el siguiente pago
+<!-- Bottom Section (Confidence trigger, single action, zero captions) -->
+<footer class="w-full text-left">
+<p class="text-white/75 text-sm font-normal mb-3">
+        1 pago más
       </p>
+<button class="w-full h-14 bg-white text-[#111111] font-semibold text-base rounded-xl flex items-center justify-center border-0 cursor-pointer active:scale-[0.98] transition-transform duration-150 select-none outline-none focus:outline-none" type="button">
+        Listo
+      </button>
 </footer>
 </main>
-<script>
-    // Lightweight micro-interaction for fast counter handling
-    const dismissBtn = document.getElementById('dismissButton');
-    dismissBtn.addEventListener('click', () => {
-      dismissBtn.style.opacity = '0.7';
-      dismissBtn.innerHTML = `
-        <span class="material-symbols-outlined animate-spin text-xl" data-icon="sync">sync</span>
-        <span>Cargando siguiente...</span>
-      `;
-      setTimeout(() => {
-        window.location.reload();
-      }, 350);
-    });
-  </script>
 </body></html>

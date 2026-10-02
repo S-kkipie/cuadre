@@ -1,20 +1,20 @@
 {
   "projectId": "2866795004547147911",
   "title": "Cuadre",
+  "direction": "monochrome (v2)",
   "designSystem": {
     "name": "assets/5831208026276009980",
-    "primary": "#0B7A3B",
-    "secondary": "#9A5B00",
-    "tertiary": "#B3261E",
-    "neutral": "#FAFAF7",
-    "headlineFont": "Plus Jakarta Sans",
-    "bodyFont": "Public Sans (app ships Atkinson Hyperlegible Next)",
-    "roundness": "ROUND_TWELVE"
+    "primary": "#111111",
+    "paid": "#0B7A3B",
+    "stale": "#9A5B00",
+    "neutral": "#FFFFFF",
+    "font": "Geist",
+    "roundness": "ROUND_EIGHT"
   },
   "screens": [
-    { "id": "3315e31da69e41eb9da31295c46d4918", "title": "Hoy", "deviceType": "MOBILE", "file": "designs/hoy" },
-    { "id": "7d53806c217545d0a69a984f6478daae", "title": "Pago recibido", "deviceType": "MOBILE", "file": "designs/confirmacion" },
-    { "id": "ece825e9d0bd4ff6bf6a785bcc22805c", "title": "Pago anterior", "deviceType": "MOBILE", "file": "designs/confirmacion-anterior" },
-    { "id": "92e43d3560984d55bf010a5fdbc00eab", "title": "Configura Cuadre", "deviceType": "MOBILE", "file": "designs/configuracion", "note": "supersedes d9ce5c58 (had wallet brand logos)" }
-  ]
+    { "id": "30e9d63b9461460893ac50866d5a402e", "title": "Hoy v2", "deviceType": "MOBILE", "file": "designs/hoy" },
+    { "id": "14e5b8bd97a440d7a8cb98e453d88fc1", "title": "Pago recibido v2", "deviceType": "MOBILE", "file": "designs/confirmacion" },
+    { "id": "85df7819ad154b77b41fbcd1c09ff989", "title": "Configura Cuadre v2", "deviceType": "MOBILE", "file": "designs/configuracion" }
+  ],
+  "archived": "designs/v1-descartado (first pass: too decorated)"
 }
