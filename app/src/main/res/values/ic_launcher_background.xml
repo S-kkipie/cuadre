@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Cream paper the stamp is printed on. Keep in sync with branding/make_icon.py CREAM. -->
+    <color name="ic_launcher_background">#F2E6D5</color>
+</resources>
