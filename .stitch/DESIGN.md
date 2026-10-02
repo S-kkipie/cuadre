@@ -1,13 +1,14 @@
 ---
 name: Cuadre — ink + terracotta
 colors:
-  paper: '#ffffff'
-  ink: '#111111'             # text
+  paper: '#fbfaf7'           # warm paper, not screen white
+  surface: '#ffffff'         # dialogs
+  ink: '#1a1814'             # text
   primary: '#b4532a'         # terracotta brand: wordmark, primary buttons, links, active nav, switch (white on it 5.0:1)
-  ink-muted: '#6b6b6b'       # labels, secondary lines, inactive nav
-  hairline: '#eaeaea'        # row dividers, outlined buttons
-  disabled-fill: '#e6e6e6'
-  disabled-ink: '#8a8a8a'
+  ink-muted: '#6b675f'       # labels, secondary lines, inactive nav
+  hairline: '#e9e5dd'        # row dividers, outlined buttons
+  disabled-fill: '#eae6de'
+  disabled-ink: '#8c877e'
   paid: '#0b7a3b'            # ONLY: confirmation flood + live "Escuchando" dot + "Listo ✓" status
   stale: '#8c6a00'           # ONLY: "Pago anterior" flood + pending-setup line (dark mustard, kept apart from terracotta)
   on-flood: '#ffffff'
@@ -78,3 +79,15 @@ and mustard = old payment are signals only, never decoration.
 ## Voice
 Peruvian Spanish, short and plain: "Recibido hoy", "Pago recibido", "Listo", "Arreglar",
 "Permitir", "Empezar".
+
+## Motion
+
+One curve everywhere: strong ease-out `cubic-bezier(0.23, 1, 0.32, 1)`. Motion only where it says something.
+
+- Press: buttons scale to 0.97 (100 ms in, 180 ms out), no ripple. Text links dim to 55 %.
+- Amounts: "S/" and cents at half size, muted, raised toward cap height; the soles carry the weight.
+- Hoy total: rolls up when a payment lands (old value exits up, new rises in, 320 ms).
+- Payment rows slide into place (animateItem). Wallet split bar animates its proportions.
+- Confirmation: amount block rises 28 dp from 0.94 + fade, 380 ms. The one moment with real motion.
+- Bottom nav: the underline slides between tabs (220 ms).
+- "Escuchando" dot breathes a slow 2.4 s halo only while the listener is connected.

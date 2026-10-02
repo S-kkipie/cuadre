@@ -27,7 +27,19 @@ import pe.aido.cuadre.ui.components.ListRow
 import pe.aido.cuadre.ui.components.OutlineButton
 import pe.aido.cuadre.ui.components.PaymentRow
 import pe.aido.cuadre.ui.components.SidePadding
-import pe.aido.cuadre.ui.components.StatusDot
+import pe.aido.cuadre.ui.components.Amount
+import pe.aido.cuadre.ui.components.EaseOutStrong
+import pe.aido.cuadre.ui.components.LiveDot
+import pe.aido.cuadre.ui.components.WalletSplit
+import pe.aido.cuadre.core.shortName
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import pe.aido.cuadre.ui.components.TextLink
 import pe.aido.cuadre.ui.shortDay
 import pe.aido.cuadre.ui.soles
@@ -64,8 +76,8 @@ fun TodayScreen(
                     Text("Cuadre", style = t.wordmark, color = c.primary)
                     Spacer(Modifier.height(6.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        StatusDot(if (listening) c.paid else c.stale)
-                        Spacer(Modifier.width(8.dp))
+                        LiveDot(if (listening) c.paid else c.stale, live = listening)
+                        Spacer(Modifier.width(4.dp))
                         Text(
                             if (listening) "Escuchando pagos" else "No está escuchando",
                             style = t.secondary,
@@ -92,7 +104,16 @@ fun TodayScreen(
             Spacer(Modifier.height(40.dp))
             Text("Recibido hoy", style = t.secondary, color = c.inkMuted)
             Spacer(Modifier.height(4.dp))
-            Text(soles(VerificationEngine.total(payments)), style = t.amountTotal, color = c.ink)
+            // The total rolls up when a payment lands: old value exits up, new one rises in.
+            AnimatedContent(
+                targetState = VerificationEngine.total(payments),
+                transitionSpec = {
+                    (slideInVertically(tween(320, easing = EaseOutStrong)) { it / 2 } + fadeIn(tween(220)))
+                        .togetherWith(slideOutVertically(tween(200, easing = EaseOutStrong)) { -it / 2 } + fadeOut(tween(150)))
+                        .using(SizeTransform(clip = true))
+                },
+                label = "total",
+            ) { total -> Amount(total, t.amountTotal, c.ink) }
             Spacer(Modifier.height(4.dp))
             Text(
                 if (payments.size == 1) "1 pago" else "${payments.size} pagos",
@@ -102,16 +123,12 @@ fun TodayScreen(
             Spacer(Modifier.height(24.dp))
         }
 
-        val byWallet = VerificationEngine.dailyClose(payments)
+        val byWallet = VerificationEngine.dailyClose(payments).entries
+            .groupBy({ it.key.shortName }, { it.value })
+            .map { (label, sums) -> label to sums.sum() }
+            .sortedByDescending { it.second }
         if (byWallet.isNotEmpty()) item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(bottom = 20.dp)) {
-                byWallet.entries.sortedByDescending { it.value }.forEach { (wallet, sum) ->
-                    Row(Modifier.fillMaxWidth()) {
-                        Text(wallet.label(), style = t.body, color = c.ink, modifier = Modifier.weight(1f))
-                        Text(soles(sum), style = t.body.copy(fontFeatureSettings = "tnum"), color = c.ink)
-                    }
-                }
-            }
+            WalletSplit(byWallet, Modifier.padding(bottom = 28.dp))
         }
 
         item {
@@ -149,8 +166,11 @@ fun TodayScreen(
 
         items(payments, key = { it.id }) { p ->
             val isCash = p.event.wallet == Wallet.EFECTIVO
-            PaymentRow(p, if (isCash) Modifier.clickable { onCashTap(p) } else Modifier)
-            Hairline()
+            // New payments slide into place instead of popping in.
+            Column(Modifier.animateItem(fadeInSpec = tween(260), placementSpec = tween(320, easing = EaseOutStrong))) {
+                PaymentRow(p, if (isCash) Modifier.clickable { onCashTap(p) } else Modifier)
+                Hairline()
+            }
         }
 
         if (debugAction != null) item {

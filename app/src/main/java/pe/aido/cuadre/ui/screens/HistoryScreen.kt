@@ -11,6 +11,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import pe.aido.cuadre.ui.components.EaseOutStrong
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -21,6 +29,7 @@ import pe.aido.cuadre.core.DailyHistory
 import pe.aido.cuadre.core.NuevoRus
 import pe.aido.cuadre.core.VerificationEngine.ConfirmedPayment
 import pe.aido.cuadre.data.DayCloseEntity
+import pe.aido.cuadre.ui.components.Amount
 import pe.aido.cuadre.ui.components.Hairline
 import pe.aido.cuadre.ui.components.ListRow
 import pe.aido.cuadre.ui.components.PaymentRow
@@ -72,8 +81,22 @@ fun HistoryScreen(
                 Spacer(Modifier.height(24.dp))
                 Text("Ingresos de ${now.format(monthName)}", style = t.secondary, color = c.inkMuted)
                 Spacer(Modifier.height(4.dp))
-                Text(soles(month), style = t.amountTotal, color = c.ink)
-                Spacer(Modifier.height(8.dp))
+                Amount(month, t.amountTotal, c.ink)
+                Spacer(Modifier.height(16.dp))
+                // How much of the category's monthly ceiling is used. Mustard once it gets close.
+                val ceiling = if (rus.category == 1) NuevoRus.CATEGORY_1_MONTHLY else NuevoRus.CATEGORY_2_MONTHLY
+                val used by animateFloatAsState(
+                    (month / ceiling).toFloat().coerceIn(0f, 1f),
+                    tween(600, easing = EaseOutStrong),
+                    label = "rus",
+                )
+                Box(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(c.hairline)) {
+                    Box(
+                        Modifier.fillMaxWidth(used).height(6.dp).clip(CircleShape)
+                            .background(if (rus.nearLimit || rus.overMonthly) c.stale else c.ink),
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
                 Text(rusLine(rus), style = t.body, color = if (rus.nearLimit || rus.overMonthly) c.stale else c.inkMuted)
                 Text(
                     "En el año: ${soles(year)} de ${soles(NuevoRus.ANNUAL_LIMIT)}",
@@ -110,7 +133,7 @@ fun HistoryScreen(
                 TextLink("Historial", { openDay = null }, muted = true)
                 Text(day.longDay(), style = t.title, color = c.ink)
                 Spacer(Modifier.height(8.dp))
-                Text(soles(dayPayments.sumOf { it.event.amount }), style = t.amountTotal, color = c.ink)
+                Amount(dayPayments.sumOf { it.event.amount }, t.amountTotal, c.ink)
                 if (close != null) {
                     Spacer(Modifier.height(4.dp))
                     Text(

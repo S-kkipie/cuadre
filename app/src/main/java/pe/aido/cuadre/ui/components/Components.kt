@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -74,9 +76,9 @@ fun PrimaryButton(
         modifier
             .fillMaxWidth()
             .height(56.dp)
+            .pressable(enabled = enabled, onClick = onClick)
             .clip(ButtonShape)
-            .background(fill)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+            .background(fill),
         contentAlignment = Alignment.Center,
     ) { Text(text, style = Cuadre.type.button, color = label) }
 }
@@ -88,9 +90,9 @@ fun OutlineButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
     Box(
         modifier
             .heightIn(min = 48.dp)
+            .pressable(onClick = onClick)
             .clip(ButtonShape)
             .border(1.dp, c.primary, ButtonShape)
-            .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 20.dp),
         contentAlignment = Alignment.Center,
     ) { Text(text, style = Cuadre.type.body.copy(fontWeight = FontWeight.SemiBold), color = c.primary) }
@@ -101,7 +103,7 @@ fun OutlineButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
 fun TextLink(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, muted: Boolean = false) {
     val c = Cuadre.colors
     Box(
-        modifier.heightIn(min = 48.dp).clickable(role = Role.Button, onClick = onClick),
+        modifier.heightIn(min = 48.dp).pressableText(onClick),
         contentAlignment = Alignment.CenterStart,
     ) {
         Text(
@@ -235,32 +237,113 @@ fun StatusDot(color: Color, modifier: Modifier = Modifier) {
 
 enum class Tab(val label: String) { Hoy("Hoy"), Historial("Historial"), Ajustes("Ajustes") }
 
-/** Text-only bottom navigation: active = brand + semibold with a short underline; inactive = muted. */
+/**
+ * Text-only bottom navigation: active = brand + semibold; one short underline slides between
+ * tabs (spatial: it shows where you came from). 220 ms, strong ease-out.
+ */
 @Composable
 fun BottomNav(selected: Tab, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
     val c = Cuadre.colors
+    val index by androidx.compose.animation.core.animateFloatAsState(
+        selected.ordinal.toFloat(),
+        androidx.compose.animation.core.tween(220, easing = EaseOutStrong),
+        label = "tab",
+    )
     Column(modifier.fillMaxWidth().background(c.paper)) {
         Hairline()
-        Row(Modifier.fillMaxWidth().navigationBarsPadding().height(64.dp)) {
-            Tab.entries.forEach { tab ->
-                val active = tab == selected
-                Box(
-                    Modifier.weight(1f).fillMaxWidth().height(64.dp)
-                        .clickable(role = Role.Tab) { onSelect(tab) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().navigationBarsPadding().height(64.dp)) {
+            val slot = maxWidth / Tab.entries.size
+            Row(Modifier.fillMaxWidth().height(64.dp)) {
+                Tab.entries.forEach { tab ->
+                    val active = tab == selected
+                    Box(
+                        Modifier.weight(1f).fillMaxWidth().height(64.dp)
+                            .pressableText { onSelect(tab) },
+                        contentAlignment = Alignment.Center,
+                    ) {
                         Text(
                             tab.label,
                             style = Cuadre.type.body.copy(fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal),
                             color = if (active) c.primary else c.inkMuted,
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        Box(
-                            Modifier.width(20.dp).height(2.dp).clip(CircleShape)
-                                .background(if (active) c.primary else Color.Transparent),
+                            modifier = Modifier.padding(bottom = 8.dp),
                         )
                     }
+                }
+            }
+            Box(
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = 14.dp)
+                    .offset(x = slot * index + (slot - 20.dp) / 2)
+                    .width(20.dp).height(2.dp).clip(CircleShape)
+                    .background(c.primary),
+            )
+        }
+    }
+}
+
+/**
+ * "S/ 1,284.50" where the soles carry the weight: currency and cents at half size, muted,
+ * riding the cap height. Reads at a glance from arm's length, like a price tag.
+ */
+@Composable
+fun Amount(
+    value: Double,
+    style: androidx.compose.ui.text.TextStyle,
+    color: Color,
+    minorColor: Color = Cuadre.colors.inkMuted,
+    modifier: Modifier = Modifier,
+) {
+    val (whole, cents) = plainAmount(value).split(".")
+    val minor = androidx.compose.ui.text.SpanStyle(
+        color = minorColor,
+        fontSize = style.fontSize * 0.5f,
+        fontWeight = FontWeight.Medium,
+        baselineShift = androidx.compose.ui.text.style.BaselineShift(0.4f),
+        letterSpacing = 0.sp,
+    )
+    Text(
+        androidx.compose.ui.text.buildAnnotatedString {
+            pushStyle(minor); append("S/ "); pop()
+            append(whole)
+            pushStyle(minor); append(".$cents"); pop()
+        },
+        style = style,
+        color = color,
+        modifier = modifier,
+    )
+}
+
+/**
+ * Today's money by wallet as one thin bar plus a legend. Shades of ink, not brand colors:
+ * which wallet is not a signal, only proportion is.
+ */
+@Composable
+fun WalletSplit(parts: List<Pair<String, Double>>, modifier: Modifier = Modifier) {
+    val c = Cuadre.colors
+    val shades = listOf(c.ink, c.ink.copy(alpha = 0.45f), c.ink.copy(alpha = 0.2f), c.ink.copy(alpha = 0.1f))
+    Column(modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            parts.forEachIndexed { i, (_, sum) ->
+                val w by androidx.compose.animation.core.animateFloatAsState(
+                    sum.toFloat().coerceAtLeast(0.0001f),
+                    androidx.compose.animation.core.tween(400, easing = EaseOutStrong),
+                    label = "split",
+                )
+                Box(Modifier.weight(w).fillMaxWidth().height(6.dp).background(shades[i.coerceAtMost(3)]))
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            parts.forEachIndexed { i, (label, sum) ->
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(8.dp).clip(CircleShape).background(shades[i.coerceAtMost(3)]))
+                        Spacer(Modifier.width(8.dp))
+                        Text(label, style = Cuadre.type.secondary, color = c.inkMuted)
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(plainAmount(sum), style = Cuadre.type.rowAmount, color = c.ink)
                 }
             }
         }

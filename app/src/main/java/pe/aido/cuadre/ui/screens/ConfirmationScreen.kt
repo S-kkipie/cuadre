@@ -36,6 +36,13 @@ import pe.aido.cuadre.alerts.PaymentAlerts
 import pe.aido.cuadre.core.ConfirmationPolicy
 import pe.aido.cuadre.core.VerificationEngine.ConfirmedPayment
 import pe.aido.cuadre.ui.components.PrimaryButton
+import pe.aido.cuadre.ui.components.Amount
+import pe.aido.cuadre.ui.components.EaseOutStrong
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import pe.aido.cuadre.core.displayName
 import pe.aido.cuadre.ui.hhmmss
 import pe.aido.cuadre.ui.soles
@@ -64,6 +71,12 @@ fun ConfirmationScreen(payment: ConfirmedPayment, queued: Int, onDismiss: () -> 
         if (ConfirmationPolicy.isFresh(e.postedAtMillis, System.currentTimeMillis())) playConfirmation(context)
     }
     BackHandler(onBack = onDismiss)
+
+    // Entrance per payment: the amount rises and settles (not from nothing: 0.94 + fade).
+    // This is the moment the cashier looks for, so it gets real motion; 380 ms, strong ease-out.
+    val enter = remember(payment.id) { Animatable(0f) }
+    LaunchedEffect(payment.id) { enter.animateTo(1f, tween(380, easing = EaseOutStrong)) }
+    val rise = with(LocalDensity.current) { 28.dp.toPx() }
 
     // White status-bar icons over the color flood; restore dark icons on paper afterwards.
     val view = LocalView.current
@@ -101,28 +114,40 @@ fun ConfirmationScreen(payment: ConfirmedPayment, queued: Int, onDismiss: () -> 
 
         Spacer(Modifier.weight(1f))
 
-        Text(soles(e.amount), style = t.amountHero, color = c.onFlood)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            e.counterparty?.let(::displayName) ?: "Pagador no visible",
-            style = t.title.copy(fontWeight = FontWeight.Normal),
-            color = c.onFlood,
-        )
-
-        if (!fresh) {
-            Spacer(Modifier.height(24.dp))
+        Column(
+            Modifier.graphicsLayer {
+                val p = enter.value
+                alpha = p
+                translationY = (1f - p) * rise
+                val s = 0.94f + 0.06f * p
+                scaleX = s; scaleY = s
+                transformOrigin = TransformOrigin(0f, 0.5f)
+            },
+        ) {
+            Amount(e.amount, t.amountHero, c.onFlood, minorColor = c.onFloodMuted)
+            Spacer(Modifier.height(8.dp))
             Text(
-                "Este pago no es de ahora. No lo uses para confirmar al cliente que tienes enfrente.",
-                style = t.body.copy(fontSize = 18.sp, lineHeight = 26.sp, fontWeight = FontWeight.Medium),
+                e.counterparty?.let(::displayName) ?: "Pagador no visible",
+                style = t.title.copy(fontWeight = FontWeight.Normal),
                 color = c.onFlood,
             )
-        }
 
-        e.securityCode?.let { code ->
-            Spacer(Modifier.height(32.dp))
-            Text("Código de seguridad", style = t.secondary.copy(fontSize = 16.sp), color = c.onFloodMuted)
-            Spacer(Modifier.height(4.dp))
-            Text(code, style = t.code, color = if (fresh) c.onFlood else c.onFloodMuted)
+            if (!fresh) {
+                Spacer(Modifier.height(24.dp))
+                Text(
+                    "Este pago no es de ahora. No lo uses para confirmar al cliente que tienes enfrente.",
+                    style = t.body.copy(fontSize = 18.sp, lineHeight = 26.sp, fontWeight = FontWeight.Medium),
+                    color = c.onFlood,
+                )
+            }
+
+            e.securityCode?.let { code ->
+                Spacer(Modifier.height(32.dp))
+                Text("Código de seguridad", style = t.secondary.copy(fontSize = 16.sp), color = c.onFloodMuted)
+                Spacer(Modifier.height(4.dp))
+                Text(code, style = t.code, color = if (fresh) c.onFlood else c.onFloodMuted)
+            }
+
         }
 
         Spacer(Modifier.height(16.dp))
