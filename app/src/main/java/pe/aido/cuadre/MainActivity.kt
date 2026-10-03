@@ -141,7 +141,15 @@ class MainActivity : ComponentActivity() {
             listenerEnabled = NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName),
             notificationsEnabled = NotificationManagerCompat.from(this).areNotificationsEnabled(),
             battery = BatteryCheck.statuses(this),
+            restrictedSettings = installedOutsidePlay(),
         )
+    }
+
+    /** Android 13+ restricts notification access for apps that didn't come from a store. */
+    private fun installedOutsidePlay(): Boolean {
+        if (Build.VERSION.SDK_INT < 33) return false
+        val installer = runCatching { packageManager.getInstallSourceInfo(packageName).installingPackageName }.getOrNull()
+        return installer != "com.android.vending"
     }
 
     private fun askNotifications() {
@@ -244,6 +252,7 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
                 onRequestNotifications = actions.requestNotifications,
                 onFixBattery = actions.fixBattery,
                 onOpenPrivacy = { privacyOpen = true },
+                onOpenAppInfo = { actions.fixBattery(app.packageName) },
                 onStart = { app.prefs.setOnboarded(true) },
                 linkedStore = link?.storeName,
             )

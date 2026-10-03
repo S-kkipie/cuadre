@@ -32,6 +32,8 @@ data class SetupState(
     val listenerEnabled: Boolean,
     val notificationsEnabled: Boolean,
     val battery: List<BatteryCheck.AppStatus>,
+    /** Installed from the web on Android 13+: the system greys out notification access until the user allows it. */
+    val restrictedSettings: Boolean = false,
 ) {
     val restricted get() = battery.filter { !it.unrestricted }
 
@@ -53,6 +55,7 @@ fun SetupScreen(
     onRequestNotifications: () -> Unit,
     onFixBattery: (String) -> Unit,
     onOpenPrivacy: () -> Unit,
+    onOpenAppInfo: () -> Unit,
     onStart: () -> Unit,
     linkedStore: String? = null,
 ) {
@@ -95,6 +98,16 @@ fun SetupScreen(
             Hairline()
             ListRow("Acceso a notificaciones", secondary = if (state.listenerEnabled) null else "Para leer los avisos de Yape y Plin") {
                 if (state.listenerEnabled) Done() else OutlineButton("Permitir", onOpenListenerSettings)
+            }
+            if (!state.listenerEnabled && state.restrictedSettings) {
+                Notice(
+                    "¿Te sale «Ajuste restringido»? Pasa porque instalaste Cuadre desde la web. " +
+                        "Abre la información de Cuadre, toca ⋮ arriba a la derecha y elige " +
+                        "«Permitir ajustes restringidos». Luego vuelve aquí y toca Permitir.",
+                    color = c.inkMuted,
+                )
+                TextLink("Abrir información de Cuadre", onOpenAppInfo)
+                Spacer(Modifier.height(8.dp))
             }
             Hairline()
             ListRow("Avisos con sonido", secondary = if (state.notificationsEnabled) null else "Para avisarte con la app cerrada") {
