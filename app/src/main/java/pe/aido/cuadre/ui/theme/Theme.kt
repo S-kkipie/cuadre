@@ -30,6 +30,7 @@ data class CuadreColors(
     val onPrimary: Color = Color(0xFFFFFFFF),
     val inkMuted: Color = Color(0xFF6B675F),
     val hairline: Color = Color(0xFFE9E5DD),
+    val fieldLine: Color = Color(0xFF948F85),    // input outline, 3:1 on surface (WCAG 1.4.11)
     val disabledFill: Color = Color(0xFFEAE6DE),
     val disabledInk: Color = Color(0xFF8C877E),
     val paid: Color = Color(0xFF0B7A3B),
