@@ -25,6 +25,34 @@ object SyncCodec {
 
     data class Paired(val deviceId: String, val token: String, val storeId: String, val storeName: String)
 
+    /** A Better Auth session for this phone's account. */
+    data class Session(val token: String, val name: String, val email: String)
+
+    fun signInBody(email: String, password: String): String =
+        JSONObject().put("email", email.trim()).put("password", password).toString()
+
+    fun signUpBody(name: String, email: String, password: String): String =
+        JSONObject().put("name", name.trim()).put("email", email.trim()).put("password", password).toString()
+
+    fun googleBody(idToken: String): String =
+        JSONObject().put("provider", "google").put("idToken", JSONObject().put("token", idToken)).toString()
+
+    fun linkOwnBody(deviceName: String, storeName: String?): String = JSONObject().apply {
+        put("name", deviceName)
+        storeName?.trim()?.takeIf { it.isNotEmpty() }?.let { put("storeName", it) }
+    }.toString()
+
+    /** `{ token, user: { name, email } }` (sign-in, sign-up and social idToken all answer this way). */
+    fun parseSession(json: String): Session {
+        val o = JSONObject(json)
+        val user = o.getJSONObject("user")
+        return Session(o.getString("token"), user.optString("name"), user.getString("email"))
+    }
+
+    /** Better Auth error code (e.g. INVALID_EMAIL_OR_PASSWORD) from an error body, or null. */
+    fun errorCode(body: String): String? =
+        runCatching { JSONObject(body).optString("code").takeIf { it.isNotBlank() } }.getOrNull()
+
     /** `{ response: { deviceId, token, storeId, storeName }, code, status }` */
     fun parsePaired(json: String): Paired {
         val r = JSONObject(json).getJSONObject("response")

@@ -59,6 +59,8 @@ fun SetupScreen(
     sharingAvailable: Boolean = false,
     onLink: () -> Unit = {},
     onUnlink: () -> Unit = {},
+    accountEmail: String? = null,
+    onSignOut: () -> Unit = {},
 ) {
     val c = Cuadre.colors
     val t = Cuadre.type
@@ -82,7 +84,7 @@ fun SetupScreen(
                 "Nunca entra a tu cuenta ni mueve dinero.",
                 // Must stay true: once linked, payments do leave the phone (to the store only).
                 if (linkedStore == null) {
-                    "Todo se queda en tu celular."
+                    "Tus pagos se quedan en tu celular. Tu cuenta solo guarda tu nombre y correo."
                 } else {
                     "Los pagos se comparten solo con los celulares de $linkedStore."
                 },
@@ -130,6 +132,13 @@ fun SetupScreen(
                     CuadreSwitch(voiceOn, onVoiceChange)
                 }
                 TextLink("Probar voz", onTestVoice)
+
+                if (accountEmail != null) {
+                    Spacer(Modifier.height(32.dp))
+                    Text("Cuenta", style = t.section, color = c.ink)
+                    ListRow(accountEmail, secondary = "Con esta cuenta conectas tus celulares a tu tienda")
+                    TextLink("Cerrar sesión", onSignOut, muted = true)
+                }
 
                 if (sharingAvailable) {
                     Spacer(Modifier.height(32.dp))

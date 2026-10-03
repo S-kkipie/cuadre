@@ -3,6 +3,7 @@ package pe.aido.cuadre
 import android.app.Application
 import android.content.Context
 import androidx.room.Room
+import pe.aido.cuadre.account.Account
 import pe.aido.cuadre.alerts.PaymentAlerts
 import pe.aido.cuadre.alerts.PaymentVoice
 import pe.aido.cuadre.data.Prefs
@@ -36,6 +37,7 @@ class CuadreApp : Application() {
     }
 
     val storeLink: StoreLink by lazy { StoreLink(this) }
+    val account: Account by lazy { Account(this) }
 
     /** Store a parsed event and, if the core confirms it as a new payment, announce and share it. */
     suspend fun capture(event: PaymentEvent): ConfirmedPayment? =

@@ -1,6 +1,7 @@
 package pe.aido.cuadre
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
@@ -46,6 +47,11 @@ import pe.aido.cuadre.core.VerificationEngine.ConfirmedPayment
 import pe.aido.cuadre.data.DayCloseEntity
 import pe.aido.cuadre.debug.DebugPayments
 import pe.aido.cuadre.sync.PushRegisterWorker
+import pe.aido.cuadre.sync.SyncCodec
+import pe.aido.cuadre.account.AuthMessages
+import pe.aido.cuadre.account.GoogleSignIn
+import pe.aido.cuadre.ui.screens.LinkOutcome
+import pe.aido.cuadre.ui.screens.LoginScreen
 import pe.aido.cuadre.setup.BatteryCheck
 import pe.aido.cuadre.ui.components.BottomNav
 import pe.aido.cuadre.ui.components.Tab
@@ -193,6 +199,8 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
     var deleting by remember { mutableStateOf<ConfirmedPayment?>(null) }
     var pairOpen by remember { mutableStateOf(false) }
     val link by app.storeLink.link.collectAsState()
+    val session by app.account.session.collectAsState()
+    val api = remember { CuadreApi() }
 
     val onboarded by app.prefs.onboarded.collectAsState()
     val tillMode by app.prefs.tillMode.collectAsState()
@@ -225,10 +233,36 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
                 sharingAvailable = CuadreApi().configured,
                 onLink = { pairOpen = true },
                 onUnlink = app.storeLink::clear,
+                accountEmail = session?.email,
+                onSignOut = {
+                    val token = session?.token
+                    app.account.clear()
+                    // Best effort: end the session server-side too.
+                    if (token != null) scope.launch(Dispatchers.IO) { api.signOut(token) }
+                },
             )
         }
 
         when {
+            // An account is required once the build talks to a backend; without one there's nothing to sign in to.
+            session == null && api.configured -> LoginScreen(
+                googleAvailable = GoogleSignIn.available,
+                onGoogle = {
+                    when (val g = GoogleSignIn.idToken(context as Activity)) {
+                        is GoogleSignIn.Result.Token -> signIn(app, withContext(Dispatchers.IO) { api.signInGoogle(g.idToken) })
+                        GoogleSignIn.Result.Cancelled -> null
+                        is GoogleSignIn.Result.Error -> g.message
+                    }
+                },
+                onEmail = { signUp, name, email, password ->
+                    signIn(
+                        app,
+                        withContext(Dispatchers.IO) {
+                            if (signUp) api.signUpEmail(name, email, password) else api.signInEmail(email, password)
+                        },
+                    )
+                },
+            )
             !onboarded -> Box(Modifier.statusBarsPadding()) { setupScreen(true) }
             closingDay -> CloseDayScreen(
                 dayLabel = dayStart.shortDay(),
@@ -298,6 +332,8 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
 
         if (pairOpen) PairDialog(
             defaultName = android.os.Build.MODEL,
+            signedIn = session != null,
+            onLinkOwn = { name, storeName -> linkOwnPhone(app, name, storeName) },
             onPair = { code, name -> pairPhone(app, code, name) },
             onDismiss = { pairOpen = false },
         )
@@ -333,6 +369,34 @@ private fun PrivacyDialog(linkedStore: String?, onClose: () -> Unit) {
         },
         containerColor = Cuadre.colors.paper,
     )
+}
+
+/** Saves the session from a sign-in / sign-up answer. Error text, or null when signed in. */
+private fun signIn(app: CuadreApp, r: CuadreApi.Result<SyncCodec.Session>): String? {
+    AuthMessages.of(r)?.let { return it }
+    app.account.save((r as CuadreApi.Result.Ok).value)
+    return null
+}
+
+/** Links this phone to the signed-in owner's store, no code. */
+private suspend fun linkOwnPhone(app: CuadreApp, name: String, storeName: String?): LinkOutcome {
+    val session = app.account.session.value ?: return LinkOutcome.Error("Vuelve a entrar a tu cuenta.")
+    return when (val r = withContext(Dispatchers.IO) { CuadreApi().linkOwnDevice(session.token, name, storeName) }) {
+        is CuadreApi.Result.Ok -> {
+            app.storeLink.save(r.value, linkedAt = System.currentTimeMillis())
+            PushRegisterWorker.enqueue(app)
+            LinkOutcome.Done
+        }
+        is CuadreApi.Result.Rejected -> when (r.status) {
+            404 -> LinkOutcome.NeedStoreName
+            401 -> {
+                app.account.clear()
+                LinkOutcome.Error("Tu sesión venció. Vuelve a entrar.")
+            }
+            else -> LinkOutcome.Error("No se pudo conectar. Inténtalo de nuevo.")
+        }
+        is CuadreApi.Result.Failed -> LinkOutcome.Error("Sin conexión. Revisa tu internet e inténtalo de nuevo.")
+    }
 }
 
 /** Trades the owner's 6-digit code for this phone's store membership. Error text, or null. */

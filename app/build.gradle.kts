@@ -21,6 +21,9 @@ android {
         // cuadre-backend base URL (e.g. https://cuadre-backend.vercel.app). Empty = sharing off.
         val apiUrl = (project.findProperty("cuadreApiUrl") as String?).orEmpty()
         buildConfigField("String", "CUADRE_API_URL", "\"$apiUrl\"")
+        // Google sign-in: the Web OAuth client ID (project cuadre-pe). Empty = button hidden.
+        val googleWebClientId = (project.findProperty("googleWebClientId") as String?).orEmpty()
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
     }
 
     buildTypes {
@@ -59,6 +62,11 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging")
     // Firebase drags in an old androidx.fragment; the permission request (ActivityResult API) needs >= 1.3.
     implementation("androidx.fragment:fragment-ktx:1.8.4")
+
+    // "Continuar con Google" via Credential Manager.
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303") // real org.json on the JVM (Android's is a stub)
