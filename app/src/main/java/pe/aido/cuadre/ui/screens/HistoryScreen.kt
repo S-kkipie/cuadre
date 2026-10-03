@@ -34,7 +34,11 @@ import pe.aido.cuadre.ui.components.Hairline
 import pe.aido.cuadre.ui.components.ListRow
 import pe.aido.cuadre.ui.components.PaymentRow
 import pe.aido.cuadre.ui.components.SidePadding
-import pe.aido.cuadre.ui.components.TextLink
+import pe.aido.cuadre.ui.components.BackLink
+import pe.aido.cuadre.ui.components.SecondaryButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
 import pe.aido.cuadre.ui.longDay
 import pe.aido.cuadre.ui.plainAmount
 import pe.aido.cuadre.ui.soles
@@ -67,7 +71,7 @@ fun HistoryScreen(
 
     LazyColumn(
         Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = SidePadding, end = SidePadding, top = 32.dp, bottom = 24.dp),
+        contentPadding = PaddingValues(start = SidePadding, end = SidePadding, top = if (openDay == null) 32.dp else 8.dp, bottom = 24.dp),
     ) {
         val day = openDay
         if (day == null) {
@@ -109,12 +113,15 @@ fun HistoryScreen(
                     color = c.inkMuted,
                     modifier = Modifier.padding(top = 4.dp),
                 )
-                TextLink("Exportar ${now.format(monthName)} para Excel", { onExportMonth(now) })
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(20.dp))
+                SecondaryButton("Exportar ${now.format(monthName)} a Excel", { onExportMonth(now) })
+                Spacer(Modifier.height(28.dp))
+                Text("Días", style = t.section, color = c.ink)
+                Spacer(Modifier.height(8.dp))
                 Hairline()
             }
             if (days.isEmpty()) item {
-                Text("Todavía no hay pagos guardados.", style = t.body, color = c.inkMuted, modifier = Modifier.padding(vertical = 16.dp))
+                Text("Todavía no hay pagos guardados. Cada día con pagos aparece aquí.", style = t.body, color = c.inkMuted, modifier = Modifier.padding(vertical = 16.dp))
             }
             items(days, key = { it.date.toString() }) { d ->
                 val close = closeByDay[d.date]
@@ -123,14 +130,18 @@ fun HistoryScreen(
                     d.date.longDay(),
                     secondary = close?.let { "$count · ${CashClose.differenceLabel(it.countedCash - it.expectedCash)}" } ?: count,
                     onClick = { openDay = d.date },
-                ) { Text(plainAmount(d.total), style = t.rowAmount, color = c.ink) }
+                ) {
+                    Text(plainAmount(d.total), style = t.rowAmount, color = c.ink)
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = c.inkMuted)
+                }
                 Hairline()
             }
         } else {
             val dayPayments = payments.filter { dateOf(it) == day }
             val close = closeByDay[day]
             item {
-                TextLink("Historial", { openDay = null }, muted = true)
+                BackLink("Historial") { openDay = null }
+                Spacer(Modifier.height(16.dp))
                 Text(day.longDay(), style = t.title, color = c.ink)
                 Spacer(Modifier.height(8.dp))
                 Amount(dayPayments.sumOf { it.event.amount }, t.amountTotal, c.ink)

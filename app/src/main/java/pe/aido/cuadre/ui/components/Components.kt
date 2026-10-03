@@ -176,46 +176,6 @@ fun PaymentRow(payment: ConfirmedPayment, modifier: Modifier = Modifier) {
     }
 }
 
-/** Big money input: "S/" prefix, decimal keyboard, hairline underline. */
-@Composable
-fun AmountInput(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    modifier: Modifier = Modifier,
-    focusRequester: androidx.compose.ui.focus.FocusRequester? = null,
-) {
-    val c = Cuadre.colors
-    Column(modifier.fillMaxWidth()) {
-        Text(label, style = Cuadre.type.secondary, color = c.inkMuted)
-        Spacer(Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("S/ ", style = Cuadre.type.amountTotal.copy(fontSize = 36.sp), color = c.inkMuted)
-            androidx.compose.foundation.text.BasicTextField(
-                value = value,
-                onValueChange = { v -> onValueChange(v.filter { it.isDigit() || it == '.' || it == ',' }.take(10)) },
-                textStyle = Cuadre.type.amountTotal.copy(fontSize = 36.sp, color = c.ink),
-                singleLine = true,
-                cursorBrush = androidx.compose.ui.graphics.SolidColor(c.primary),
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
-                ),
-                decorationBox = { inner ->
-                    Box {
-                        if (value.isEmpty()) Text("0.00", style = Cuadre.type.amountTotal.copy(fontSize = 36.sp), color = c.hairline)
-                        inner()
-                    }
-                },
-                modifier = Modifier.weight(1f).then(
-                    if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier,
-                ),
-            )
-        }
-        Spacer(Modifier.height(8.dp))
-        Hairline()
-    }
-}
-
 @Composable
 fun CuadreSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     val c = Cuadre.colors

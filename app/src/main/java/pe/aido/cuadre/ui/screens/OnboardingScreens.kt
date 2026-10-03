@@ -41,10 +41,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import pe.aido.cuadre.R
 import pe.aido.cuadre.data.UseMode
-import pe.aido.cuadre.ui.components.Hairline
+import pe.aido.cuadre.ui.components.BackLink
+import pe.aido.cuadre.ui.components.CodeInput
+import pe.aido.cuadre.ui.components.LiveDot
+import pe.aido.cuadre.ui.components.Notice
+import pe.aido.cuadre.ui.components.TextInput
+import androidx.compose.ui.platform.LocalFocusManager
 import pe.aido.cuadre.ui.components.PrimaryButton
 import pe.aido.cuadre.ui.components.SidePadding
-import pe.aido.cuadre.ui.components.TextLink
 import pe.aido.cuadre.ui.components.pressable
 import pe.aido.cuadre.ui.theme.Cuadre
 
@@ -138,9 +142,11 @@ fun WorkerJoinScreen(
 ) {
     val c = Cuadre.colors
     val t = Cuadre.type
+    val focus = LocalFocusManager.current
     var code by rememberSaveable { mutableStateOf("") }
     var name by rememberSaveable { mutableStateOf(defaultName) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var tried by rememberSaveable { mutableStateOf(false) }
     var busy by rememberSaveable { mutableStateOf(false) }
     var run by rememberSaveable { mutableIntStateOf(0) }
     LaunchedEffect(run) {
@@ -149,41 +155,55 @@ fun WorkerJoinScreen(
         error = onJoin(code, name.trim())
         busy = false
     }
+    val submit = {
+        tried = true
+        error = null
+        if (code.length == 6 && name.isNotBlank() && !busy) {
+            focus.clearFocus()
+            run++
+        }
+    }
 
     OnboardingColumn {
-        TextLink("Volver", onBack, muted = true)
+        BackLink(onClick = onBack)
+        Spacer(Modifier.height(16.dp))
         Text("Únete a tu tienda", style = t.title, color = c.ink)
         Spacer(Modifier.height(8.dp))
         Text(
-            if (available) "Pídele al dueño el código de 6 dígitos. Lo genera en el panel de Cuadre."
-            else "Esta versión de Cuadre no puede conectarse a una tienda.",
+            "Pídele al dueño el código de 6 dígitos. Lo ve en el panel de Cuadre, en cuadre.aido.lat.",
             style = t.body,
             color = c.inkMuted,
         )
-        Spacer(Modifier.height(28.dp))
-        Text("Código", style = t.secondary, color = c.inkMuted)
-        BasicTextField(
-            value = code,
-            onValueChange = { v -> code = v.filter(Char::isDigit).take(6); error = null },
-            textStyle = t.code.copy(color = c.ink, letterSpacing = 0.3.em),
-            singleLine = true,
-            cursorBrush = SolidColor(c.primary),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, autoCorrectEnabled = false),
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        if (!available) {
+            Spacer(Modifier.height(20.dp))
+            Notice("Esta versión de Cuadre no puede conectarse a una tienda.")
+        }
+        Spacer(Modifier.height(32.dp))
+        CodeInput(
+            code,
+            { code = it; error = null; if (it.length == 6) focus.clearFocus() },
+            "Código de la tienda",
+            error = if (tried && code.length < 6) "Faltan ${6 - code.length} dígitos" else null,
         )
-        Hairline()
-        Spacer(Modifier.height(20.dp))
-        NameField("Nombre de este celular", name) { name = it.take(60) }
+        Spacer(Modifier.height(24.dp))
+        TextInput(
+            label = "Nombre de este celular",
+            value = name,
+            onChange = { name = it; error = null },
+            placeholder = "Ej. Caja 1",
+            error = if (tried && name.isBlank()) "Ponle un nombre para reconocerlo" else null,
+            last = true,
+            maxLength = 60,
+            onNext = submit,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text("Así lo verá el dueño en su lista de celulares.", style = t.secondary, color = c.inkMuted)
         error?.let {
-            Spacer(Modifier.height(16.dp))
-            Text(it, style = t.body, color = c.stale)
+            Spacer(Modifier.height(20.dp))
+            Notice(it)
         }
         Spacer(Modifier.height(28.dp))
-        PrimaryButton(
-            if (busy) "Conectando…" else "Unirme",
-            { run++ },
-            enabled = available && code.length == 6 && name.isNotBlank() && !busy,
-        )
+        PrimaryButton(if (busy) "Conectando…" else "Unirme a la tienda", submit, enabled = available && !busy)
     }
 }
 
@@ -200,47 +220,90 @@ fun OwnerStoreScreen(
 ) {
     val c = Cuadre.colors
     val t = Cuadre.type
+    val focus = LocalFocusManager.current
     var storeName by rememberSaveable { mutableStateOf("") }
     var needName by rememberSaveable { mutableStateOf(false) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var tried by rememberSaveable { mutableStateOf(false) }
     var busy by rememberSaveable { mutableStateOf(true) }
     // 1 = try linking right away (most owners already made their store on the web).
     var run by rememberSaveable { mutableIntStateOf(1) }
     LaunchedEffect(run) {
         busy = true
-        when (val r = onLink(defaultName, storeName.takeIf { needName })) {
+        when (val r = onLink(defaultName, storeName.trim().takeIf { needName })) {
             LinkOutcome.Done -> Unit
             LinkOutcome.NeedStoreName -> { needName = true; error = null }
             is LinkOutcome.Error -> error = r.message
         }
         busy = false
     }
+    val submit = {
+        tried = true
+        if (!needName || storeName.isNotBlank()) {
+            focus.clearFocus()
+            run++
+        }
+    }
 
     OnboardingColumn {
-        Text(if (needName) "¿Cómo se llama tu tienda?" else "Conectando tu celular…", style = t.title, color = c.ink)
+        BackLink(onClick = onSignOut)
+        Spacer(Modifier.height(16.dp))
+        Text(
+            when {
+                needName -> "¿Cómo se llama tu tienda?"
+                error != null -> "No pudimos conectar tu celular"
+                else -> "Conectando tu celular…"
+            },
+            style = t.title,
+            color = c.ink,
+        )
         Spacer(Modifier.height(8.dp))
         Text(
-            if (needName) "Es el nombre que verán los celulares de tu tienda." else "Entraste como $email.",
+            when {
+                needName -> "Es el nombre que verán los celulares de tu tienda. Puedes cambiarlo en la web."
+                error != null -> "Revisa tu internet e inténtalo otra vez."
+                else -> "Entraste como $email. Lo estamos uniendo a tu tienda."
+            },
             style = t.body,
             color = c.inkMuted,
         )
-        if (needName) {
+        if (busy && !needName) {
             Spacer(Modifier.height(28.dp))
-            NameField("Nombre de tu tienda", storeName) { storeName = it.take(80); error = null }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                LiveDot(c.primary, live = true)
+                Spacer(Modifier.width(8.dp))
+                Text("Conectando con cuadre.aido.lat", style = t.secondary, color = c.inkMuted)
+            }
+        }
+        if (needName) {
+            Spacer(Modifier.height(32.dp))
+            TextInput(
+                label = "Nombre de tu tienda",
+                value = storeName,
+                onChange = { storeName = it; error = null },
+                placeholder = "Ej. Bodega Rosa",
+                error = if (tried && storeName.isBlank()) "Escribe el nombre de tu tienda" else null,
+                last = true,
+                maxLength = 80,
+                onNext = submit,
+            )
         }
         error?.let {
-            Spacer(Modifier.height(16.dp))
-            Text(it, style = t.body, color = c.stale)
+            Spacer(Modifier.height(20.dp))
+            Notice(it)
         }
         if (needName || error != null) {
             Spacer(Modifier.height(28.dp))
             PrimaryButton(
-                if (busy) "Conectando…" else if (needName) "Crear mi tienda" else "Reintentar",
-                { run++ },
-                enabled = !busy && (!needName || storeName.isNotBlank()),
+                when {
+                    busy -> "Conectando…"
+                    needName -> "Crear mi tienda"
+                    else -> "Reintentar"
+                },
+                submit,
+                enabled = !busy,
             )
         }
-        TextLink("Salir de esta cuenta", onSignOut, muted = true)
     }
 }
 
@@ -254,24 +317,8 @@ private fun OnboardingColumn(content: @Composable () -> Unit) {
             .verticalScroll(rememberScrollState())
             .padding(horizontal = SidePadding),
     ) {
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(8.dp))
         content()
         Spacer(Modifier.height(32.dp))
     }
-}
-
-@Composable
-private fun NameField(label: String, value: String, onChange: (String) -> Unit) {
-    val c = Cuadre.colors
-    Text(label, style = Cuadre.type.secondary, color = c.inkMuted)
-    BasicTextField(
-        value = value,
-        onValueChange = onChange,
-        textStyle = Cuadre.type.rowTitle.copy(color = c.ink),
-        singleLine = true,
-        cursorBrush = SolidColor(c.primary),
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-    )
-    Hairline()
 }

@@ -41,6 +41,16 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import pe.aido.cuadre.ui.components.TextLink
+import pe.aido.cuadre.ui.components.FieldShape
+import pe.aido.cuadre.ui.components.SecondaryButton
+import pe.aido.cuadre.ui.components.pressable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
 import pe.aido.cuadre.ui.shortDay
 import pe.aido.cuadre.ui.soles
 import pe.aido.cuadre.ui.theme.Cuadre
@@ -91,13 +101,25 @@ fun TodayScreen(
 
         // One quiet line instead of banners: anything that silently breaks capture.
         if (setupIssues > 0) item {
-            Spacer(Modifier.height(16.dp))
-            Text(
-                if (setupIssues == 1) "Falta 1 ajuste para recibir todos los pagos" else "Faltan $setupIssues ajustes para recibir todos los pagos",
-                style = t.body,
-                color = c.stale,
-                modifier = Modifier.clickable(onClick = onOpenSettings).padding(vertical = 12.dp),
-            )
+            Spacer(Modifier.height(20.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .pressable(onClick = onOpenSettings)
+                    .clip(FieldShape)
+                    .background(c.stale.copy(alpha = 0.08f))
+                    .padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    if (setupIssues == 1) "Falta 1 ajuste para recibir todos los pagos" else "Faltan $setupIssues ajustes para recibir todos los pagos",
+                    style = t.body,
+                    color = c.stale,
+                    modifier = Modifier.weight(1f),
+                )
+                Text("Arreglar", style = t.body.copy(fontWeight = FontWeight.SemiBold), color = c.stale)
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = c.stale)
+            }
         }
 
         item {
@@ -132,14 +154,14 @@ fun TodayScreen(
         }
 
         item {
-            Row(Modifier.fillMaxWidth().padding(bottom = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlineButton("+ Efectivo", onAddCash)
-                Spacer(Modifier.weight(1f))
-                TextLink(if (closeLabel != null) "Caja cerrada · ver" else "Cerrar caja", onCloseDay)
+            Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SecondaryButton("+ Efectivo", onAddCash, Modifier.weight(1f))
+                SecondaryButton(if (closeLabel != null) "Ver cierre" else "Cerrar caja", onCloseDay, Modifier.weight(1f))
             }
             if (closeLabel != null) {
-                Text(closeLabel, style = t.secondary, color = c.inkMuted, modifier = Modifier.padding(bottom = 16.dp))
+                Text(closeLabel, style = t.secondary, color = c.inkMuted, modifier = Modifier.padding(bottom = 8.dp))
             }
+            Spacer(Modifier.height(16.dp))
         }
 
         item {
@@ -151,17 +173,24 @@ fun TodayScreen(
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Pagos", style = t.section, color = c.ink, modifier = Modifier.weight(1f))
-                TextLink("Historial", onOpenHistory)
+                TextLink("Ver historial", onOpenHistory)
             }
         }
 
         if (payments.isEmpty()) item {
-            Text(
-                "Aún no hay pagos hoy. Aparecen aquí apenas llega la notificación de Yape o Plin.",
-                style = t.body,
-                color = c.inkMuted,
-                modifier = Modifier.padding(vertical = 16.dp),
-            )
+            Spacer(Modifier.height(8.dp))
+            Column(
+                Modifier.fillMaxWidth().clip(FieldShape).background(c.surface)
+                    .border(1.dp, c.hairline, FieldShape).padding(20.dp),
+            ) {
+                Text("Aún no hay pagos hoy", style = t.rowTitle, color = c.ink)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Apenas te llegue un Yape o Plin aparece aquí, con el nombre y el código.",
+                    style = t.secondary,
+                    color = c.inkMuted,
+                )
+            }
         }
 
         items(payments, key = { it.id }) { p ->

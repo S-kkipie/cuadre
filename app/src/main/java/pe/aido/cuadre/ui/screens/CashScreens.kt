@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -34,6 +35,13 @@ import pe.aido.cuadre.core.VerificationEngine.ConfirmedPayment
 import pe.aido.cuadre.core.parseSoles
 import pe.aido.cuadre.core.shortName
 import pe.aido.cuadre.ui.components.AmountInput
+import pe.aido.cuadre.ui.components.BackLink
+import pe.aido.cuadre.ui.components.FieldShape
+import pe.aido.cuadre.ui.components.SecondaryButton
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import pe.aido.cuadre.ui.components.Hairline
 import pe.aido.cuadre.ui.components.OutlineButton
 import pe.aido.cuadre.ui.components.PrimaryButton
@@ -47,19 +55,29 @@ import pe.aido.cuadre.ui.theme.Cuadre
 fun CashSaleDialog(onAdd: (Double) -> Unit, onDismiss: () -> Unit) {
     val c = Cuadre.colors
     var text by remember { mutableStateOf("") }
+    var tried by remember { mutableStateOf(false) }
     val amount = parseSoles(text)
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
     Dialog(onDismissRequest = onDismiss) {
         Column(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.paper).padding(24.dp),
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.paper).padding(24.dp),
         ) {
             Text("Venta en efectivo", style = Cuadre.type.section, color = c.ink)
+            Spacer(Modifier.height(4.dp))
+            Text("Se suma al total de hoy y al cierre de caja.", style = Cuadre.type.secondary, color = c.inkMuted)
+            Spacer(Modifier.height(20.dp))
+            AmountInput(
+                text,
+                { text = it },
+                "Monto",
+                focusRequester = focus,
+                error = if (tried && amount == null) "Escribe cuánto te pagaron" else null,
+            )
             Spacer(Modifier.height(24.dp))
-            AmountInput(text, { text = it }, "Monto", focusRequester = focus)
-            Spacer(Modifier.height(24.dp))
-            PrimaryButton("Agregar", { amount?.let(onAdd) }, enabled = amount != null)
-            TextLink("Cancelar", onDismiss, muted = true)
+            PrimaryButton("Agregar", { tried = true; amount?.let(onAdd) })
+            Spacer(Modifier.height(8.dp))
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { TextLink("Cancelar", onDismiss, muted = true) }
         }
     }
 }
@@ -71,9 +89,9 @@ fun DeleteCashDialog(payment: ConfirmedPayment, onDelete: () -> Unit, onDismiss:
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = c.paper,
-        title = { Text("Borrar venta en efectivo", style = Cuadre.type.section, color = c.ink) },
-        text = { Text("Se quitará ${soles(payment.event.amount)} del cuadre de hoy.", style = Cuadre.type.body, color = c.ink) },
-        confirmButton = { TextButton(onClick = onDelete) { Text("Borrar", color = c.primary) } },
+        title = { Text("¿Borrar esta venta?", style = Cuadre.type.section, color = c.ink) },
+        text = { Text("Se quitarán ${soles(payment.event.amount)} en efectivo del total de hoy. Los pagos de Yape y Plin no se pueden borrar.", style = Cuadre.type.body, color = c.ink) },
+        confirmButton = { TextButton(onClick = onDelete) { Text("Borrar", color = c.stale, fontWeight = FontWeight.SemiBold) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar", color = c.inkMuted) } },
     )
 }
@@ -98,52 +116,69 @@ fun CloseDayScreen(
     val openingValue = parseSoles(opening) ?: 0.0
     val countedValue = parseSoles(counted)
     val result = CashClose.compute(payments, openingValue, countedValue ?: 0.0)
+    var tried by remember { mutableStateOf(false) }
     BackHandler(onBack = onBack)
 
     Column(Modifier.fillMaxSize().background(c.paper).statusBarsPadding().imePadding()) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = SidePadding)) {
+            Spacer(Modifier.height(8.dp))
+            BackLink("Hoy", onBack)
             Spacer(Modifier.height(16.dp))
-            TextLink("Hoy", onBack, muted = true)
             Text("Cerrar caja", style = t.title, color = c.ink)
+            Spacer(Modifier.height(4.dp))
             Text(dayLabel, style = t.body, color = c.inkMuted)
 
+            // What came in today, as one boxed receipt.
             Spacer(Modifier.height(24.dp))
-            result.byWallet.entries.sortedByDescending { it.value }.forEach { (w, sum) ->
-                SummaryRow(w.shortName, soles(sum))
+            Column(
+                Modifier.fillMaxWidth().clip(FieldShape).background(Color.White)
+                    .border(1.dp, c.hairline, FieldShape).padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                result.byWallet.entries.sortedByDescending { it.value }.forEach { (w, sum) ->
+                    SummaryRow(w.shortName, soles(sum))
+                }
+                Hairline()
+                SummaryRow("Total vendido", soles(result.salesTotal), strong = true)
             }
-            Hairline()
-            SummaryRow("Total vendido", soles(result.salesTotal), strong = true)
 
             Spacer(Modifier.height(32.dp))
-            Text("Efectivo en la caja", style = t.section, color = c.ink)
-            Spacer(Modifier.height(16.dp))
+            Text("Cuenta el efectivo", style = t.section, color = c.ink)
+            Spacer(Modifier.height(4.dp))
+            Text("Yape y Plin ya están confirmados. Solo falta la plata de la caja.", style = t.secondary, color = c.inkMuted)
+            Spacer(Modifier.height(20.dp))
             AmountInput(opening, { opening = it }, "Con cuánto abriste la caja")
             Spacer(Modifier.height(20.dp))
-            AmountInput(counted, { counted = it }, "Cuánto efectivo contaste ahora")
+            AmountInput(
+                counted,
+                { counted = it },
+                "Cuánto hay ahora en la caja",
+                error = if (tried && countedValue == null) "Cuenta la caja y escribe el monto" else null,
+            )
 
             Spacer(Modifier.height(20.dp))
             SummaryRow("Deberías tener", soles(result.expectedCash))
             if (countedValue != null) {
-                val diffColor = when {
-                    kotlin.math.abs(result.difference) < 0.005 -> c.paid
+                val exact = kotlin.math.abs(result.difference) < 0.005
+                val tone = when {
+                    exact -> c.paid
                     result.difference < 0 -> c.stale
                     else -> c.ink
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(12.dp))
                 Text(
                     CashClose.differenceLabel(result.difference),
-                    style = t.title.copy(fontWeight = FontWeight.SemiBold),
-                    color = diffColor,
+                    style = t.section,
+                    color = tone,
+                    modifier = Modifier.fillMaxWidth().clip(FieldShape).background(tone.copy(alpha = 0.08f))
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
                 )
             }
             Spacer(Modifier.height(24.dp))
         }
-        Column(Modifier.padding(horizontal = SidePadding, vertical = 16.dp)) {
-            PrimaryButton("Guardar cierre", { onSave(result) }, enabled = countedValue != null)
+        Column(Modifier.navigationBarsPadding().padding(horizontal = SidePadding, vertical = 16.dp)) {
+            PrimaryButton("Guardar cierre", { tried = true; if (countedValue != null) onSave(result) })
             Spacer(Modifier.height(12.dp))
-            Row(Modifier.fillMaxWidth()) {
-                OutlineButton("Compartir por WhatsApp", { onShare(CashClose.shareText(dayLabel, result)) }, Modifier.weight(1f))
-            }
+            SecondaryButton("Compartir por WhatsApp", { onShare(CashClose.shareText(dayLabel, result)) })
         }
     }
 }

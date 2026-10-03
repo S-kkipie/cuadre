@@ -60,15 +60,16 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import pe.aido.cuadre.R
-import pe.aido.cuadre.ui.components.EaseOutStrong
+import pe.aido.cuadre.ui.components.BackLink
+import pe.aido.cuadre.ui.components.FieldShape
+import pe.aido.cuadre.ui.components.Notice
+import pe.aido.cuadre.ui.components.TextInput
 import pe.aido.cuadre.ui.components.Hairline
 import pe.aido.cuadre.ui.components.PrimaryButton
 import pe.aido.cuadre.ui.components.SidePadding
 import pe.aido.cuadre.ui.components.pressable
 import pe.aido.cuadre.ui.components.pressableText
 import pe.aido.cuadre.ui.theme.Cuadre
-
-private val FieldShape = RoundedCornerShape(12.dp)
 
 /**
  * Owner sign-in / sign-up. Google first (one tap, no password to forget), then email. The button is
@@ -143,15 +144,7 @@ fun LoginScreen(
             .padding(horizontal = SidePadding),
     ) {
         Spacer(Modifier.height(8.dp))
-        Row(
-            Modifier.heightIn(min = 48.dp).pressableText(onBack),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = c.inkMuted, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("Volver", style = t.body, color = c.inkMuted)
-        }
-
+        BackLink(onClick = onBack)
         Spacer(Modifier.height(16.dp))
         Text(if (signUp) "Crea tu cuenta de dueño" else "Entra como dueño", style = t.title, color = c.ink)
         Spacer(Modifier.height(8.dp))
@@ -174,7 +167,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(24.dp))
         if (signUp) {
-            Field(
+            TextInput(
                 label = "Tu nombre",
                 value = name,
                 onChange = { name = it; error = null },
@@ -185,7 +178,7 @@ fun LoginScreen(
             )
             Spacer(Modifier.height(20.dp))
         }
-        Field(
+        TextInput(
             label = "Correo",
             value = email,
             onChange = { email = it.trim(); error = null },
@@ -195,7 +188,7 @@ fun LoginScreen(
             onNext = { focus.moveFocus(FocusDirection.Down) },
         )
         Spacer(Modifier.height(20.dp))
-        Field(
+        TextInput(
             label = "Contraseña",
             value = password,
             onChange = { password = it; error = null },
@@ -209,16 +202,7 @@ fun LoginScreen(
 
         error?.let {
             Spacer(Modifier.height(20.dp))
-            Text(
-                it,
-                style = t.body,
-                color = c.stale,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(FieldShape)
-                    .background(c.stale.copy(alpha = 0.08f))
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            )
+            Notice(it)
         }
 
         Spacer(Modifier.height(28.dp))
@@ -281,99 +265,5 @@ private fun GoogleButton(busy: Boolean, enabled: Boolean, onClick: () -> Unit) {
             fontSize = 16.sp,
             color = Color(0xFF1F1F1F),
         )
-    }
-}
-
-/**
- * Boxed field: label above, a 56dp outlined box (3:1 outline, 2dp brand ring on focus, mustard when
- * wrong) and the reason below it. Passwords get a plain-word "Mostrar" toggle, no icon to decode.
- */
-@Composable
-private fun Field(
-    label: String,
-    value: String,
-    onChange: (String) -> Unit,
-    placeholder: String,
-    keyboard: KeyboardType,
-    error: String?,
-    onNext: () -> Unit,
-    secret: Boolean = false,
-    last: Boolean = false,
-) {
-    val c = Cuadre.colors
-    val t = Cuadre.type
-    val source = remember { MutableInteractionSource() }
-    val focused by source.collectIsFocusedAsState()
-    var shown by rememberSaveable { mutableStateOf(false) }
-    val ring by animateColorAsState(
-        when {
-            error != null -> c.stale
-            focused -> c.primary
-            else -> c.fieldLine
-        },
-        tween(160, easing = EaseOutStrong),
-        label = "ring",
-    )
-    val text = keyboard == KeyboardType.Text
-
-    Column(Modifier.fillMaxWidth()) {
-        Text(label, style = t.secondary.copy(fontWeight = FontWeight.Medium), color = c.ink)
-        Spacer(Modifier.height(8.dp))
-        BasicTextField(
-            value = value,
-            onValueChange = { onChange(it.take(120)) },
-            textStyle = t.body.copy(color = c.ink, fontSize = 17.sp),
-            singleLine = true,
-            cursorBrush = SolidColor(c.primary),
-            interactionSource = source,
-            visualTransformation = if (secret && !shown) PasswordVisualTransformation() else VisualTransformation.None,
-            // Never autocorrect or capitalize an email or a password (the keyboard was suggesting words).
-            keyboardOptions = KeyboardOptions(
-                keyboardType = keyboard,
-                imeAction = if (last) ImeAction.Done else ImeAction.Next,
-                autoCorrectEnabled = text,
-                capitalization = if (text) KeyboardCapitalization.Words else KeyboardCapitalization.None,
-            ),
-            keyboardActions = KeyboardActions(onNext = { onNext() }, onDone = { onNext() }),
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics {
-                    contentDescription = label
-                    if (error != null) error(error)
-                },
-            decorationBox = { inner ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .clip(FieldShape)
-                        .background(c.surface)
-                        .border(if (focused || error != null) 2.dp else 1.dp, ring, FieldShape)
-                        .padding(start = 16.dp, end = if (secret) 4.dp else 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(Modifier.weight(1f)) {
-                        if (value.isEmpty()) Text(placeholder, style = t.body.copy(fontSize = 17.sp), color = c.disabledInk)
-                        inner()
-                    }
-                    if (secret) {
-                        Box(
-                            Modifier.heightIn(min = 48.dp).pressableText { shown = !shown }.padding(horizontal = 12.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                if (shown) "Ocultar" else "Mostrar",
-                                style = t.secondary.copy(fontWeight = FontWeight.SemiBold),
-                                color = c.primary,
-                            )
-                        }
-                    }
-                }
-            },
-        )
-        if (error != null) {
-            Spacer(Modifier.height(6.dp))
-            Text(error, style = t.secondary, color = c.stale)
-        }
     }
 }

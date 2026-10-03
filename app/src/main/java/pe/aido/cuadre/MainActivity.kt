@@ -16,6 +16,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.AlertDialog
@@ -370,32 +375,41 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
     }
 }
 
+/** Privacy in four short answers instead of one paragraph: what, what not, where it goes, how to stop. */
 @Composable
 private fun PrivacyDialog(linkedStore: String?, onClose: () -> Unit) {
+    val c = Cuadre.colors
+    val t = Cuadre.type
+    val points = listOf(
+        "Qué lee" to "Solo los avisos de pagos recibidos en Yape y Plin: monto, quién pagó, hora y código.",
+        "Qué no hace" to "No lee otras notificaciones, no entra a tus cuentas y no mueve dinero.",
+        "A dónde va" to if (linkedStore == null) {
+            "A ningún lado. Todo se guarda solo en este celular."
+        } else {
+            "Cada pago confirmado se comparte con $linkedStore: el servidor de Cuadre y los celulares de la tienda."
+        },
+        "Cómo pararlo" to if (linkedStore == null) {
+            "Quita el acceso a notificaciones en los ajustes del teléfono."
+        } else {
+            "Ajustes → Tu cuenta para dejar de compartir. O quita el acceso a notificaciones del teléfono."
+        },
+    )
     AlertDialog(
         onDismissRequest = onClose,
-        confirmButton = { TextButton(onClick = onClose) { Text("Entendido", color = Cuadre.colors.primary) } },
-        title = { Text("Privacidad", style = Cuadre.type.section, color = Cuadre.colors.ink) },
+        confirmButton = { TextButton(onClick = onClose) { Text("Entendido", color = c.primary, fontWeight = FontWeight.SemiBold) } },
+        title = { Text("Qué hace Cuadre con tus datos", style = t.section, color = c.ink) },
         text = {
-            Text(
-                "Cuadre lee únicamente las notificaciones de pagos recibidos de Yape y de los bancos con Plin, " +
-                    "para mostrarte el monto, quién pagó y la hora. No lee otras notificaciones, no accede a tus " +
-                    "cuentas y no mueve dinero. " +
-                    (
-                        if (linkedStore == null) {
-                            "No envía tus datos a ningún servidor: todo se guarda solo en este celular. "
-                        } else {
-                            "Como este celular está conectado a $linkedStore, cada pago confirmado (monto, medio, " +
-                                "hora, quién pagó y código) se envía al servidor de Cuadre y a los celulares de la tienda. " +
-                                "Para dejar de compartir, ve a Ajustes → Tu cuenta. "
-                        }
-                    ) +
-                    "Puedes quitar el acceso cuando quieras desde los ajustes del teléfono.",
-                style = Cuadre.type.body,
-                color = Cuadre.colors.ink,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                points.forEach { (head, body) ->
+                    Column {
+                        Text(head, style = t.secondary.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                        Spacer(Modifier.height(2.dp))
+                        Text(body, style = t.body, color = c.ink)
+                    }
+                }
+            }
         },
-        containerColor = Cuadre.colors.paper,
+        containerColor = c.paper,
     )
 }
 

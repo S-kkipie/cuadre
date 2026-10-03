@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -23,6 +24,8 @@ import pe.aido.cuadre.ui.components.OutlineButton
 import pe.aido.cuadre.ui.components.PrimaryButton
 import pe.aido.cuadre.ui.components.SidePadding
 import pe.aido.cuadre.ui.components.TextLink
+import pe.aido.cuadre.ui.components.Notice
+import pe.aido.cuadre.ui.components.StatusDot
 import pe.aido.cuadre.ui.theme.Cuadre
 
 data class SetupState(
@@ -55,7 +58,7 @@ fun SetupScreen(
 ) {
     val c = Cuadre.colors
     val t = Cuadre.type
-    Column(Modifier.fillMaxSize().padding(horizontal = SidePadding)) {
+    Column(Modifier.fillMaxSize().navigationBarsPadding().padding(horizontal = SidePadding)) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             Spacer(Modifier.height(32.dp))
             Text("Antes de empezar", style = t.title, color = c.ink)
@@ -118,11 +121,20 @@ fun SetupScreen(
             Hairline()
             Spacer(Modifier.height(24.dp))
         }
+        if (!state.canStart) {
+            Notice("Para empezar, permite el acceso a notificaciones. Sin eso Cuadre no ve los pagos.")
+            Spacer(Modifier.height(12.dp))
+        }
         PrimaryButton("Empezar", onStart, enabled = state.canStart, modifier = Modifier.padding(bottom = 24.dp))
     }
 }
 
+/** Same "● Listo" as Ajustes, so a granted permission reads the same everywhere. */
 @Composable
 private fun Done() {
-    Text("Listo ✓", style = Cuadre.type.body, color = Cuadre.colors.paid)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        StatusDot(Cuadre.colors.paid)
+        Spacer(Modifier.width(8.dp))
+        Text("Listo", style = Cuadre.type.body, color = Cuadre.colors.paid)
+    }
 }
