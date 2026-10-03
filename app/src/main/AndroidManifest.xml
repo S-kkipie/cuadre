@@ -4,7 +4,6 @@
     <!-- Notification access is granted by the user in system Settings, not via a runtime permission.
          BIND_NOTIFICATION_LISTENER_SERVICE is held by the service below. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Only used when the owner links this phone to a store (opt-in payment sharing). -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -61,6 +60,22 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Firebase stays dormant (no FCM token) until the user links a store. -->
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false" />
+
+        <service
+            android:name=".sync.StorePushService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <service
             android:name=".notifications.PaymentNotificationListenerService"

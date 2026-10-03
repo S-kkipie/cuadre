@@ -3,6 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
+    // Reads app/google-services.json (Firebase project cuadre-pe). The file is git-ignored.
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -51,6 +53,12 @@ dependencies {
 
     // Uploads to the store survive no-signal moments and app restarts.
     implementation("androidx.work:work-runtime-ktx:2.9.1")
+
+    // Payments from the store's other phones arrive as FCM data messages (only once linked).
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-messaging")
+    // Firebase drags in an old androidx.fragment; the permission request (ActivityResult API) needs >= 1.3.
+    implementation("androidx.fragment:fragment-ktx:1.8.4")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303") // real org.json on the JVM (Android's is a stub)

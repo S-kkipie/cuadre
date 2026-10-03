@@ -45,6 +45,7 @@ import pe.aido.cuadre.core.IncomeCsv
 import pe.aido.cuadre.core.VerificationEngine.ConfirmedPayment
 import pe.aido.cuadre.data.DayCloseEntity
 import pe.aido.cuadre.debug.DebugPayments
+import pe.aido.cuadre.sync.PushRegisterWorker
 import pe.aido.cuadre.setup.BatteryCheck
 import pe.aido.cuadre.ui.components.BottomNav
 import pe.aido.cuadre.ui.components.Tab
@@ -339,6 +340,7 @@ private suspend fun pairPhone(app: CuadreApp, code: String, name: String): Strin
     when (val r = withContext(Dispatchers.IO) { CuadreApi().pair(code, name) }) {
         is CuadreApi.Result.Ok -> {
             app.storeLink.save(r.value, linkedAt = System.currentTimeMillis())
+            PushRegisterWorker.enqueue(app)
             null
         }
         is CuadreApi.Result.Rejected -> "Código incorrecto o vencido. Genera uno nuevo en el panel."

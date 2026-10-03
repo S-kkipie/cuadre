@@ -15,6 +15,7 @@ import pe.aido.cuadre.data.PaymentRepository
 import pe.aido.cuadre.domain.PaymentEvent
 import pe.aido.cuadre.sync.StoreLink
 import pe.aido.cuadre.sync.SyncCodec
+import pe.aido.cuadre.sync.PushRegisterWorker
 import pe.aido.cuadre.sync.SyncWorker
 
 class CuadreApp : Application() {
@@ -30,6 +31,8 @@ class CuadreApp : Application() {
     override fun onCreate() {
         super.onCreate()
         alerts.createChannel()
+        // FCM tokens rotate; re-announce ours to the store on every start while linked.
+        if (storeLink.link.value != null) PushRegisterWorker.enqueue(this)
     }
 
     val storeLink: StoreLink by lazy { StoreLink(this) }

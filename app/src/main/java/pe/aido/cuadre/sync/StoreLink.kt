@@ -1,6 +1,7 @@
 package pe.aido.cuadre.sync
 
 import android.content.Context
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -41,5 +42,11 @@ class StoreLink(context: Context) {
     fun clear() {
         sp.edit().clear().apply()
         _link.value = null
+        // Unlinked: stop being reachable. The token is deleted and Firebase goes dormant again.
+        runCatching {
+            val fcm = FirebaseMessaging.getInstance()
+            fcm.isAutoInitEnabled = false
+            fcm.deleteToken()
+        }
     }
 }
