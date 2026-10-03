@@ -7,6 +7,7 @@ import pe.aido.cuadre.account.Account
 import pe.aido.cuadre.alerts.PaymentAlerts
 import pe.aido.cuadre.alerts.PaymentVoice
 import pe.aido.cuadre.data.Prefs
+import pe.aido.cuadre.data.UseMode
 import pe.aido.cuadre.core.VerificationEngine.ConfirmedPayment
 import pe.aido.cuadre.data.CuadreDatabase
 import pe.aido.cuadre.data.MIGRATION_1_2
@@ -32,6 +33,14 @@ class CuadreApp : Application() {
     override fun onCreate() {
         super.onCreate()
         alerts.createChannel()
+        // Installs from before the first-screen choice: infer the mode they were already using.
+        if (prefs.mode.value == null) {
+            when {
+                account.session.value != null -> prefs.setMode(UseMode.OWNER)
+                storeLink.link.value != null -> prefs.setMode(UseMode.WORKER)
+                prefs.onboarded.value -> prefs.setMode(UseMode.LOCAL)
+            }
+        }
         // FCM tokens rotate; re-announce ours to the store on every start while linked.
         if (storeLink.link.value != null) PushRegisterWorker.enqueue(this)
     }

@@ -1,6 +1,5 @@
 package pe.aido.cuadre.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -29,13 +27,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import pe.aido.cuadre.R
 import pe.aido.cuadre.ui.components.Hairline
 import pe.aido.cuadre.ui.components.OutlineButton
 import pe.aido.cuadre.ui.components.PrimaryButton
@@ -52,6 +49,7 @@ fun LoginScreen(
     googleAvailable: Boolean,
     onGoogle: suspend () -> String?,
     onEmail: suspend (signUp: Boolean, name: String, email: String, password: String) -> String?,
+    onBack: () -> Unit,
 ) {
     val c = Cuadre.colors
     val t = Cuadre.type
@@ -88,17 +86,12 @@ fun LoginScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = SidePadding),
     ) {
-        Spacer(Modifier.height(40.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(painterResource(R.mipmap.ic_launcher_foreground), contentDescription = null, modifier = Modifier.size(44.dp))
-            Spacer(Modifier.width(4.dp))
-            Text("Cuadre", style = t.wordmark, color = c.primary)
-        }
-        Spacer(Modifier.height(32.dp))
-        Text(if (signUp) "Crea tu cuenta" else "Entra a Cuadre", style = t.title, color = c.ink)
+        Spacer(Modifier.height(24.dp))
+        TextLink("Volver", onBack, muted = true)
+        Text(if (signUp) "Crea tu cuenta de dueño" else "Entra como dueño", style = t.title, color = c.ink)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Con tu cuenta, tus celulares se conectan a tu tienda. Tus pagos se siguen guardando en tu celular.",
+            "Con tu cuenta conectas los celulares de tu tienda y ves los pagos en la web.",
             style = t.body,
             color = c.inkMuted,
         )
@@ -177,7 +170,13 @@ private fun Field(
             singleLine = true,
             cursorBrush = SolidColor(c.primary),
             visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
-            keyboardOptions = KeyboardOptions(keyboardType = keyboard, imeAction = ImeAction.Next),
+            // Never autocorrect or capitalize an email or a password (the keyboard was suggesting words).
+            keyboardOptions = KeyboardOptions(
+                keyboardType = keyboard,
+                imeAction = ImeAction.Next,
+                autoCorrectEnabled = keyboard == KeyboardType.Text,
+                capitalization = if (keyboard == KeyboardType.Text) KeyboardCapitalization.Words else KeyboardCapitalization.None,
+            ),
             modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         )
         Hairline()

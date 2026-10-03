@@ -4,6 +4,16 @@ import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+/** How this phone uses Cuadre, picked on the first screen. */
+enum class UseMode {
+    /** Alone, no account: everything stays on the phone. */
+    LOCAL,
+    /** The store owner: signs in and links their phones to their store. */
+    OWNER,
+    /** An employee's phone: joins the store with the owner's 6-digit code, no account. */
+    WORKER,
+}
+
 /** Small on-device settings. Exposed as flows so the UI and background services stay in sync. */
 class Prefs(context: Context) {
     private val sp = context.getSharedPreferences("cuadre", Context.MODE_PRIVATE)
@@ -14,6 +24,16 @@ class Prefs(context: Context) {
     private val _onboarded = bool(KEY_ONBOARDED, false)
     private val _voice = bool(KEY_VOICE, true)
     private val _listenerConnected = bool(KEY_LISTENER_CONNECTED, true)
+
+    private val _mode = MutableStateFlow(sp.getString(KEY_MODE, null)?.let { runCatching { UseMode.valueOf(it) }.getOrNull() })
+
+    /** Null until the user picks one on the first screen. */
+    val mode: StateFlow<UseMode?> = _mode
+
+    fun setMode(mode: UseMode?) {
+        sp.edit().putString(KEY_MODE, mode?.name).apply()
+        _mode.value = mode
+    }
 
     val tillMode: StateFlow<Boolean> = _tillMode
     val onboarded: StateFlow<Boolean> = _onboarded
@@ -37,5 +57,6 @@ class Prefs(context: Context) {
         const val KEY_ONBOARDED = "onboarded"
         const val KEY_VOICE = "voice"
         const val KEY_LISTENER_CONNECTED = "listener_connected"
+        const val KEY_MODE = "use_mode"
     }
 }

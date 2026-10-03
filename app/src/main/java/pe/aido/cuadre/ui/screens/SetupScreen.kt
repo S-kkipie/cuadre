@@ -57,10 +57,10 @@ fun SetupScreen(
     onTestVoice: () -> Unit = {},
     linkedStore: String? = null,
     sharingAvailable: Boolean = false,
-    onLink: () -> Unit = {},
     onUnlink: () -> Unit = {},
     accountEmail: String? = null,
-    onSignOut: () -> Unit = {},
+    modeLabel: String = "Solo en este celular",
+    onChangeMode: () -> Unit = {},
 ) {
     val c = Cuadre.colors
     val t = Cuadre.type
@@ -133,32 +133,18 @@ fun SetupScreen(
                 }
                 TextLink("Probar voz", onTestVoice)
 
-                if (accountEmail != null) {
-                    Spacer(Modifier.height(32.dp))
-                    Text("Cuenta", style = t.section, color = c.ink)
-                    ListRow(accountEmail, secondary = "Con esta cuenta conectas tus celulares a tu tienda")
-                    TextLink("Cerrar sesión", onSignOut, muted = true)
-                }
+                Spacer(Modifier.height(32.dp))
+                Text("Cómo usas Cuadre", style = t.section, color = c.ink)
+                ListRow(modeLabel, secondary = accountEmail)
+                TextLink("Cambiar", onChangeMode, muted = true)
 
-                if (sharingAvailable) {
+                if (sharingAvailable && linkedStore != null) {
                     Spacer(Modifier.height(32.dp))
-                    Text("Compartir con otros celulares", style = t.section, color = c.ink)
-                    Spacer(Modifier.height(8.dp))
-                    if (linkedStore == null) {
-                        Text(
-                            "Cada pago que confirme este celular llega al instante al dueño y a los demás celulares " +
-                                "de tu tienda, con monto, quién pagó y código. Se envía a internet solo si lo activas.",
-                            style = t.body,
-                            color = c.inkMuted,
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        OutlineButton("Vincular con mi tienda", onLink)
-                    } else {
-                        ListRow("Vinculado a $linkedStore", secondary = "Los pagos se comparten con la tienda") {
-                            Done()
-                        }
-                        TextLink("Desvincular este celular", onUnlink, muted = true)
+                    Text("Tu tienda", style = t.section, color = c.ink)
+                    ListRow("Conectado a $linkedStore", secondary = "Los pagos se comparten con los celulares de la tienda") {
+                        Done()
                     }
+                    TextLink("Desconectar este celular", onUnlink, muted = true)
                 }
             }
             Spacer(Modifier.height(24.dp))

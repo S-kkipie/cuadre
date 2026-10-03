@@ -39,7 +39,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import pe.aido.cuadre.sync.CuadreApi
-import pe.aido.cuadre.ui.screens.PairDialog
 import pe.aido.cuadre.core.CashClose
 import pe.aido.cuadre.core.ConfirmationPolicy
 import pe.aido.cuadre.core.IncomeCsv
@@ -52,6 +51,10 @@ import pe.aido.cuadre.account.AuthMessages
 import pe.aido.cuadre.account.GoogleSignIn
 import pe.aido.cuadre.ui.screens.LinkOutcome
 import pe.aido.cuadre.ui.screens.LoginScreen
+import pe.aido.cuadre.ui.screens.OwnerStoreScreen
+import pe.aido.cuadre.ui.screens.WelcomeScreen
+import pe.aido.cuadre.ui.screens.WorkerJoinScreen
+import pe.aido.cuadre.data.UseMode
 import pe.aido.cuadre.setup.BatteryCheck
 import pe.aido.cuadre.ui.components.BottomNav
 import pe.aido.cuadre.ui.components.Tab
@@ -197,9 +200,9 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
     var cashOpen by remember { mutableStateOf(false) }
     var closingDay by rememberSaveable { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<ConfirmedPayment?>(null) }
-    var pairOpen by remember { mutableStateOf(false) }
     val link by app.storeLink.link.collectAsState()
     val session by app.account.session.collectAsState()
+    val mode by app.prefs.mode.collectAsState()
     val api = remember { CuadreApi() }
 
     val onboarded by app.prefs.onboarded.collectAsState()
@@ -231,13 +234,26 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
                 onTestVoice = app.alerts::testVoice,
                 linkedStore = link?.storeName,
                 sharingAvailable = CuadreApi().configured,
-                onLink = { pairOpen = true },
-                onUnlink = app.storeLink::clear,
-                accountEmail = session?.email,
-                onSignOut = {
+                onUnlink = {
+                    // Stop sharing: this phone goes on alone, keeping its payments.
                     val token = session?.token
+                    app.storeLink.clear()
                     app.account.clear()
-                    // Best effort: end the session server-side too.
+                    app.prefs.setMode(UseMode.LOCAL)
+                    if (token != null) scope.launch(Dispatchers.IO) { api.signOut(token) }
+                },
+                accountEmail = session?.email,
+                modeLabel = when (mode) {
+                    UseMode.OWNER -> "Dueño de la tienda"
+                    UseMode.WORKER -> "Celular de un trabajador"
+                    else -> "Solo en este celular"
+                },
+                onChangeMode = {
+                    val token = session?.token
+                    // Back to the first screen. Payments stay on the phone; only the link and session go.
+                    app.storeLink.clear()
+                    app.account.clear()
+                    app.prefs.setMode(null)
                     if (token != null) scope.launch(Dispatchers.IO) { api.signOut(token) }
                 },
             )
@@ -245,7 +261,14 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
 
         when {
             // An account is required once the build talks to a backend; without one there's nothing to sign in to.
-            session == null && api.configured -> LoginScreen(
+            mode == null -> WelcomeScreen(onPick = app.prefs::setMode)
+            mode == UseMode.WORKER && link == null -> WorkerJoinScreen(
+                defaultName = android.os.Build.MODEL,
+                available = api.configured,
+                onJoin = { code, name -> pairPhone(app, code, name) },
+                onBack = { app.prefs.setMode(null) },
+            )
+            mode == UseMode.OWNER && session == null -> LoginScreen(
                 googleAvailable = GoogleSignIn.available,
                 onGoogle = {
                     when (val g = GoogleSignIn.idToken(context as Activity)) {
@@ -261,6 +284,18 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
                             if (signUp) api.signUpEmail(name, email, password) else api.signInEmail(email, password)
                         },
                     )
+                },
+                onBack = { app.prefs.setMode(null) },
+            )
+            mode == UseMode.OWNER && link == null -> OwnerStoreScreen(
+                email = session?.email.orEmpty(),
+                defaultName = android.os.Build.MODEL,
+                onLink = { name, storeName -> linkOwnPhone(app, name, storeName) },
+                onSignOut = {
+                    val token = session?.token
+                    app.account.clear()
+                    app.prefs.setMode(null)
+                    if (token != null) scope.launch(Dispatchers.IO) { api.signOut(token) }
                 },
             )
             !onboarded -> Box(Modifier.statusBarsPadding()) { setupScreen(true) }
@@ -330,13 +365,6 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
             ConfirmationScreen(head, queued = pending.size - 1, onDismiss = { app.alerts.dismiss(head.id) })
         }
 
-        if (pairOpen) PairDialog(
-            defaultName = android.os.Build.MODEL,
-            signedIn = session != null,
-            onLinkOwn = { name, storeName -> linkOwnPhone(app, name, storeName) },
-            onPair = { code, name -> pairPhone(app, code, name) },
-            onDismiss = { pairOpen = false },
-        )
 
         if (privacyOpen) PrivacyDialog(link?.storeName) { privacyOpen = false }
     }
