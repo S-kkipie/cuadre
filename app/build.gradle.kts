@@ -16,7 +16,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.0.1"
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // cuadre-backend base URL (e.g. https://cuadre-backend.vercel.app). Empty = sharing off.
         val apiUrl = (project.findProperty("cuadreApiUrl") as String?).orEmpty()
@@ -26,8 +26,23 @@ android {
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
     }
 
+    // Play upload key. Lives outside the repo: path and passwords come from ~/.gradle/gradle.properties.
+    // Without them (CI, other machines) release builds stay unsigned, as before.
+    val uploadStore = project.findProperty("CUADRE_UPLOAD_STORE_FILE") as String?
+    signingConfigs {
+        if (uploadStore != null) {
+            create("upload") {
+                storeFile = file(uploadStore)
+                storePassword = project.findProperty("CUADRE_UPLOAD_STORE_PASSWORD") as String
+                keyAlias = project.findProperty("CUADRE_UPLOAD_KEY_ALIAS") as String
+                keyPassword = project.findProperty("CUADRE_UPLOAD_KEY_PASSWORD") as String
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (uploadStore != null) signingConfig = signingConfigs.getByName("upload")
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }

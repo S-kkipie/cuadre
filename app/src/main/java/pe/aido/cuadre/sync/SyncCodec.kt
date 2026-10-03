@@ -34,6 +34,9 @@ object SyncCodec {
     fun signUpBody(name: String, email: String, password: String): String =
         JSONObject().put("name", name.trim()).put("email", email.trim()).put("password", password).toString()
 
+    fun resetBody(email: String, redirectTo: String): String =
+        JSONObject().put("email", email.trim()).put("redirectTo", redirectTo).toString()
+
     fun googleBody(idToken: String): String =
         JSONObject().put("provider", "google").put("idToken", JSONObject().put("token", idToken)).toString()
 

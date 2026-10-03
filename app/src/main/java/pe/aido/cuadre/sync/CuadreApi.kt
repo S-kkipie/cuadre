@@ -46,6 +46,13 @@ class CuadreApi(private val baseUrl: String = BuildConfig.CUADRE_API_URL) {
 
     fun signOut(session: String): Result<Unit> = call("POST", "/auth/sign-out", session, "{}") { }
 
+    /** Emails a reset link. The link opens the web page, where the new password is set. */
+    fun requestPasswordReset(email: String): Result<Unit> =
+        call("POST", "/auth/request-password-reset", null, SyncCodec.resetBody(email, baseUrl.trimEnd('/') + "/auth/reset-password")) { }
+
+    /** Deletes the signed-in account; stores, phones and shared payments go with it (server cascade). */
+    fun deleteAccount(session: String): Result<Unit> = call("POST", "/auth/delete-user", session, "{}") { }
+
     /** Signed-in owner links this phone to their store, no code. 404 = no store yet: ask its name. */
     fun linkOwnDevice(session: String, deviceName: String, storeName: String?): Result<SyncCodec.Paired> =
         call("POST", "/stores/mine/devices", session, SyncCodec.linkOwnBody(deviceName, storeName)) { SyncCodec.parsePaired(it) }

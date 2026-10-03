@@ -262,6 +262,17 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
                 onFixBattery = actions.fixBattery,
                 onOpenPrivacy = { privacyOpen = true },
                 onSignOut = leave,
+                onDeleteAccount = {
+                    val token = session?.token
+                    if (token == null) null
+                    else when (val r = withContext(Dispatchers.IO) { api.deleteAccount(token) }) {
+                        is CuadreApi.Result.Ok -> { leave(); null }
+                        is CuadreApi.Result.Rejected ->
+                            if (r.status == 401) "Tu sesión venció. Sal, vuelve a entrar e inténtalo otra vez."
+                            else "No se pudo eliminar la cuenta. Inténtalo otra vez."
+                        is CuadreApi.Result.Failed -> "Sin conexión. Revisa tu internet e inténtalo otra vez."
+                    }
+                },
                 onLeaveStore = leave,
                 onConnect = { app.prefs.setMode(null) },
             )
@@ -292,6 +303,12 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
                             if (signUp) api.signUpEmail(name, email, password) else api.signInEmail(email, password)
                         },
                     )
+                },
+                onForgot = { email ->
+                    when (val r = withContext(Dispatchers.IO) { api.requestPasswordReset(email) }) {
+                        is CuadreApi.Result.Ok -> null
+                        else -> AuthMessages.of(r) ?: "No se pudo enviar el correo. Inténtalo otra vez."
+                    }
                 },
                 onBack = { app.prefs.setMode(null) },
             )
@@ -401,6 +418,15 @@ private fun PrivacyDialog(linkedStore: String?, onClose: () -> Unit) {
     AlertDialog(
         onDismissRequest = onClose,
         confirmButton = { TextButton(onClick = onClose) { Text("Entendido", color = c.primary, fontWeight = FontWeight.SemiBold) } },
+        // The full policy (also the URL in the Play listing).
+        dismissButton = if (BuildConfig.CUADRE_API_URL.isNotBlank()) {
+            {
+                val uri = androidx.compose.ui.platform.LocalUriHandler.current
+                TextButton(onClick = { uri.openUri(BuildConfig.CUADRE_API_URL.trimEnd('/') + "/privacidad") }) {
+                    Text("Ver política completa", color = c.inkMuted)
+                }
+            }
+        } else null,
         title = { Text("Qué hace Cuadre con tus datos", style = t.section, color = c.ink) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -455,6 +481,8 @@ private suspend fun pairPhone(app: CuadreApp, code: String, name: String): Strin
             SyncWorker.enqueue(app)
             null
         }
-        is CuadreApi.Result.Rejected -> "Código incorrecto o vencido. Genera uno nuevo en el panel."
+        is CuadreApi.Result.Rejected ->
+            if (r.status == 429) "Demasiados códigos equivocados. Espera 15 minutos e inténtalo otra vez."
+            else "Código incorrecto o vencido. Pídele al dueño uno nuevo."
         is CuadreApi.Result.Failed -> "Sin conexión. Revisa tu internet e inténtalo de nuevo."
     }

@@ -21,6 +21,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -34,6 +36,8 @@ import pe.aido.cuadre.ui.components.Hairline
 import pe.aido.cuadre.ui.components.ListRow
 import pe.aido.cuadre.ui.components.OutlineButton
 import pe.aido.cuadre.ui.components.SidePadding
+import pe.aido.cuadre.ui.components.TextLink
+import androidx.compose.ui.text.font.FontWeight
 import pe.aido.cuadre.ui.theme.Cuadre
 
 /**
@@ -55,12 +59,25 @@ fun SettingsScreen(
     onFixBattery: (String) -> Unit,
     onOpenPrivacy: () -> Unit,
     onSignOut: () -> Unit,
+    /** Deletes the owner's account on the server. Error text, or null when done. */
+    onDeleteAccount: suspend () -> String?,
     onLeaveStore: () -> Unit,
     onConnect: () -> Unit,
 ) {
     val c = Cuadre.colors
     val t = Cuadre.type
     var confirm by remember { mutableStateOf<UseMode?>(null) }
+    var deleting by remember { mutableStateOf(false) }
+    var deleteRun by remember { mutableIntStateOf(0) }
+    var deleteBusy by remember { mutableStateOf(false) }
+    var deleteError by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(deleteRun) {
+        if (deleteRun == 0) return@LaunchedEffect
+        deleteBusy = true
+        deleteError = onDeleteAccount()
+        deleteBusy = false
+        if (deleteError == null) deleting = false
+    }
 
     Column(
         Modifier
@@ -78,6 +95,8 @@ fun SettingsScreen(
                 Identity(storeName ?: "Tu tienda", listOfNotNull("Dueño", accountEmail).joinToString(" · "))
                 OutlineButton("Cerrar sesión", { confirm = UseMode.OWNER }, Modifier.fillMaxWidth())
                 Note("Tus pagos se quedan en este celular. Para volver a conectarlo, entra otra vez.")
+                Spacer(Modifier.height(8.dp))
+                TextLink("Eliminar mi cuenta", { deleting = true; deleteError = null }, muted = true)
             }
             UseMode.WORKER -> {
                 Identity(storeName ?: "Tu tienda", "Celular de un trabajador")
@@ -158,6 +177,36 @@ fun SettingsScreen(
         }
         Hairline()
         Spacer(Modifier.height(32.dp))
+    }
+
+    if (deleting) {
+        AlertDialog(
+            onDismissRequest = { if (!deleteBusy) deleting = false },
+            containerColor = c.surface,
+            title = { Text("¿Eliminar tu cuenta?", style = t.section, color = c.ink) },
+            text = {
+                Column {
+                    Text(
+                        "Se borran tu cuenta, tu tienda, los celulares conectados y los pagos guardados en el servidor. " +
+                            "No se puede deshacer. Los pagos que este celular ya tiene se quedan aquí.",
+                        style = t.body,
+                        color = c.ink,
+                    )
+                    deleteError?.let {
+                        Spacer(Modifier.height(12.dp))
+                        Text(it, style = t.body, color = c.stale)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { if (!deleteBusy) deleteRun++ }) {
+                    Text(if (deleteBusy) "Eliminando…" else "Eliminar", color = c.stale, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { if (!deleteBusy) deleting = false }) { Text("Cancelar", color = c.inkMuted) }
+            },
+        )
     }
 
     confirm?.let { which ->

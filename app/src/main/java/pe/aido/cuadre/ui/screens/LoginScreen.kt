@@ -81,6 +81,8 @@ fun LoginScreen(
     googleAvailable: Boolean,
     onGoogle: suspend () -> String?,
     onEmail: suspend (signUp: Boolean, name: String, email: String, password: String) -> String?,
+    /** Emails a reset link. Error text, or null when sent. */
+    onForgot: suspend (email: String) -> String?,
     onBack: () -> Unit,
 ) {
     val c = Cuadre.colors
@@ -96,6 +98,16 @@ fun LoginScreen(
     // Bumped to run an action; the effect owns the coroutine so rotation doesn't double-submit.
     var googleRun by rememberSaveable { mutableIntStateOf(0) }
     var emailRun by rememberSaveable { mutableIntStateOf(0) }
+    var forgotRun by rememberSaveable { mutableIntStateOf(0) }
+    var sentTo by rememberSaveable { mutableStateOf<String?>(null) }
+    var forgotTried by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(forgotRun) {
+        if (forgotRun == 0) return@LaunchedEffect
+        busy = "forgot"
+        val failure = onForgot(email)
+        if (failure == null) sentTo = email else error = failure
+        busy = null
+    }
 
     LaunchedEffect(googleRun) {
         if (googleRun == 0) return@LaunchedEffect
@@ -112,6 +124,7 @@ fun LoginScreen(
 
     val nameError = if (tried && signUp && name.isBlank()) "Escribe tu nombre" else null
     val emailError = when {
+        forgotTried && !Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$").matches(email) -> "Escribe tu correo para enviarte el enlace"
         !tried -> null
         email.isBlank() -> "Escribe tu correo"
         !Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$").matches(email) -> "Ese correo no parece completo"
@@ -200,6 +213,30 @@ fun LoginScreen(
             onNext = submit,
         )
 
+        if (!signUp) {
+            Box(
+                Modifier.heightIn(min = 48.dp).pressableText {
+                    forgotTried = true
+                    error = null
+                    sentTo = null
+                    if (Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$").matches(email) && busy == null) forgotRun++
+                },
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                Text(
+                    if (busy == "forgot") "Enviando…" else "¿Olvidaste tu contraseña?",
+                    style = t.secondary.copy(fontWeight = FontWeight.SemiBold),
+                    color = c.primary,
+                )
+            }
+        }
+        sentTo?.let {
+            Spacer(Modifier.height(8.dp))
+            Notice(
+                "Te enviamos un enlace a $it. Ábrelo, pon tu contraseña nueva y vuelve a entrar aquí. Si no llega, revisa spam.",
+                color = c.paid,
+            )
+        }
         error?.let {
             Spacer(Modifier.height(20.dp))
             Notice(it)
