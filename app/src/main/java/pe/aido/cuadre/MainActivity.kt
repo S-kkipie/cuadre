@@ -53,6 +53,7 @@ import pe.aido.cuadre.ui.screens.LinkOutcome
 import pe.aido.cuadre.ui.screens.LoginScreen
 import pe.aido.cuadre.ui.screens.OwnerStoreScreen
 import pe.aido.cuadre.ui.screens.WelcomeScreen
+import pe.aido.cuadre.ui.screens.SettingsScreen
 import pe.aido.cuadre.ui.screens.WorkerJoinScreen
 import pe.aido.cuadre.data.UseMode
 import pe.aido.cuadre.setup.BatteryCheck
@@ -220,42 +221,41 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
     val lastOpening = closes.firstOrNull()?.openingCash ?: 0.0
 
     Box(Modifier.fillMaxSize().background(Cuadre.colors.paper)) {
-        val setupScreen = @Composable { firstRun: Boolean ->
+        // Back to the first screen; payments stay on the phone, only the link and session go.
+        val leave = {
+            val token = session?.token
+            app.storeLink.clear()
+            app.account.clear()
+            app.prefs.setMode(null)
+            if (token != null) scope.launch(Dispatchers.IO) { api.signOut(token) }
+        }
+        val setupScreen = @Composable {
             SetupScreen(
                 state = setup,
-                firstRun = firstRun,
                 onOpenListenerSettings = actions.openListenerSettings,
                 onRequestNotifications = actions.requestNotifications,
                 onFixBattery = actions.fixBattery,
                 onOpenPrivacy = { privacyOpen = true },
                 onStart = { app.prefs.setOnboarded(true) },
+                linkedStore = link?.storeName,
+            )
+        }
+        val settingsScreen = @Composable {
+            SettingsScreen(
+                state = setup,
+                mode = mode ?: UseMode.LOCAL,
+                storeName = link?.storeName,
+                accountEmail = session?.email,
                 voiceOn = voice,
                 onVoiceChange = app.prefs::setVoice,
                 onTestVoice = app.alerts::testVoice,
-                linkedStore = link?.storeName,
-                sharingAvailable = CuadreApi().configured,
-                onUnlink = {
-                    // Stop sharing: this phone goes on alone, keeping its payments.
-                    val token = session?.token
-                    app.storeLink.clear()
-                    app.account.clear()
-                    app.prefs.setMode(UseMode.LOCAL)
-                    if (token != null) scope.launch(Dispatchers.IO) { api.signOut(token) }
-                },
-                accountEmail = session?.email,
-                modeLabel = when (mode) {
-                    UseMode.OWNER -> "Dueño de la tienda"
-                    UseMode.WORKER -> "Celular de un trabajador"
-                    else -> "Solo en este celular"
-                },
-                onChangeMode = {
-                    val token = session?.token
-                    // Back to the first screen. Payments stay on the phone; only the link and session go.
-                    app.storeLink.clear()
-                    app.account.clear()
-                    app.prefs.setMode(null)
-                    if (token != null) scope.launch(Dispatchers.IO) { api.signOut(token) }
-                },
+                onOpenListenerSettings = actions.openListenerSettings,
+                onRequestNotifications = actions.requestNotifications,
+                onFixBattery = actions.fixBattery,
+                onOpenPrivacy = { privacyOpen = true },
+                onSignOut = leave,
+                onLeaveStore = leave,
+                onConnect = { app.prefs.setMode(null) },
             )
         }
 
@@ -298,7 +298,7 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
                     if (token != null) scope.launch(Dispatchers.IO) { api.signOut(token) }
                 },
             )
-            !onboarded -> Box(Modifier.statusBarsPadding()) { setupScreen(true) }
+            !onboarded -> Box(Modifier.statusBarsPadding()) { setupScreen() }
             closingDay -> CloseDayScreen(
                 dayLabel = dayStart.shortDay(),
                 payments = today,
@@ -338,7 +338,7 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
                             } else null,
                         )
                         Tab.Historial -> HistoryScreen(all, closes, actions.exportMonth)
-                        Tab.Ajustes -> setupScreen(false)
+                        Tab.Ajustes -> settingsScreen()
                     }
                 }
                 BottomNav(tab, { tab = it })
@@ -385,9 +385,9 @@ private fun PrivacyDialog(linkedStore: String?, onClose: () -> Unit) {
                         if (linkedStore == null) {
                             "No envía tus datos a ningún servidor: todo se guarda solo en este celular. "
                         } else {
-                            "Como vinculaste este celular a $linkedStore, cada pago confirmado (monto, medio, hora, " +
-                                "quién pagó y código) se envía al servidor de Cuadre y a los celulares de tu tienda. " +
-                                "Puedes desvincularlo en Ajustes. "
+                            "Como este celular está conectado a $linkedStore, cada pago confirmado (monto, medio, " +
+                                "hora, quién pagó y código) se envía al servidor de Cuadre y a los celulares de la tienda. " +
+                                "Para dejar de compartir, ve a Ajustes → Tu cuenta. "
                         }
                     ) +
                     "Puedes quitar el acceso cuando quieras desde los ajustes del teléfono.",

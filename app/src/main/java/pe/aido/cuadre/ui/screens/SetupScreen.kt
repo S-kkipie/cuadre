@@ -40,34 +40,25 @@ data class SetupState(
 }
 
 /**
- * First run ("Antes de empezar", with the Play-required prominent disclosure and an "Empezar"
- * button) and the Ajustes tab (same rows, no button). One action per row.
+ * First run: "Antes de empezar", with the Play-required prominent disclosure, the three things
+ * capture needs, and "Empezar". Day-to-day settings live in [SettingsScreen].
  */
 @Composable
 fun SetupScreen(
     state: SetupState,
-    firstRun: Boolean,
     onOpenListenerSettings: () -> Unit,
     onRequestNotifications: () -> Unit,
     onFixBattery: (String) -> Unit,
     onOpenPrivacy: () -> Unit,
     onStart: () -> Unit,
-    voiceOn: Boolean = true,
-    onVoiceChange: (Boolean) -> Unit = {},
-    onTestVoice: () -> Unit = {},
     linkedStore: String? = null,
-    sharingAvailable: Boolean = false,
-    onUnlink: () -> Unit = {},
-    accountEmail: String? = null,
-    modeLabel: String = "Solo en este celular",
-    onChangeMode: () -> Unit = {},
 ) {
     val c = Cuadre.colors
     val t = Cuadre.type
     Column(Modifier.fillMaxSize().padding(horizontal = SidePadding)) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             Spacer(Modifier.height(32.dp))
-            Text(if (firstRun) "Antes de empezar" else "Ajustes", style = t.title, color = c.ink)
+            Text("Antes de empezar", style = t.title, color = c.ink)
             Spacer(Modifier.height(8.dp))
             Text(
                 "Tres permisos para que cada pago real te llegue al instante.",
@@ -119,39 +110,15 @@ fun SetupScreen(
                 state.battery.forEach { app ->
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(app.label, style = t.body, color = c.ink, modifier = Modifier.weight(1f))
-                        if (app.unrestricted) Done() else TextLink("Arreglar", { onFixBattery(app.packageName) })
+                        if (app.unrestricted) Done() else OutlineButton("Arreglar", { onFixBattery(app.packageName) })
                     }
                 }
                 Spacer(Modifier.height(8.dp))
             }
             Hairline()
-            if (!firstRun) {
-                Spacer(Modifier.height(32.dp))
-                Text("Voz", style = t.section, color = c.ink)
-                ListRow("Anunciar pagos con voz", secondary = "Dice el monto, quién pagó y el código") {
-                    CuadreSwitch(voiceOn, onVoiceChange)
-                }
-                TextLink("Probar voz", onTestVoice)
-
-                Spacer(Modifier.height(32.dp))
-                Text("Cómo usas Cuadre", style = t.section, color = c.ink)
-                ListRow(modeLabel, secondary = accountEmail)
-                TextLink("Cambiar", onChangeMode, muted = true)
-
-                if (sharingAvailable && linkedStore != null) {
-                    Spacer(Modifier.height(32.dp))
-                    Text("Tu tienda", style = t.section, color = c.ink)
-                    ListRow("Conectado a $linkedStore", secondary = "Los pagos se comparten con los celulares de la tienda") {
-                        Done()
-                    }
-                    TextLink("Desconectar este celular", onUnlink, muted = true)
-                }
-            }
             Spacer(Modifier.height(24.dp))
         }
-        if (firstRun) {
-            PrimaryButton("Empezar", onStart, enabled = state.canStart, modifier = Modifier.padding(bottom = 24.dp))
-        }
+        PrimaryButton("Empezar", onStart, enabled = state.canStart, modifier = Modifier.padding(bottom = 24.dp))
     }
 }
 
