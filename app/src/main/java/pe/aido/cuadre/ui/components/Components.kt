@@ -153,7 +153,8 @@ fun PaymentRow(payment: ConfirmedPayment, modifier: Modifier = Modifier) {
     val e = payment.event
     val c = Cuadre.colors
     val wallet = e.wallet.shortName
-    val detail = listOfNotNull(wallet, e.postedAtMillis.hhmm(), e.securityCode?.let { "cód. $it" })
+    // Which phone took it matters once a store shares payments: "Yape · 14:32 · cód. 418 · Caja 2".
+    val detail = listOfNotNull(wallet, e.postedAtMillis.hhmm(), e.securityCode?.let { "cód. $it" }, payment.fromDevice)
         .joinToString(" · ")
     val isCash = e.wallet == pe.aido.cuadre.domain.Wallet.EFECTIVO
     val unknownPayer = e.counterparty == null && !isCash

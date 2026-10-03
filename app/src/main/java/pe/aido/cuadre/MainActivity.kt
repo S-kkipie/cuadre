@@ -51,6 +51,7 @@ import pe.aido.cuadre.core.VerificationEngine.ConfirmedPayment
 import pe.aido.cuadre.data.DayCloseEntity
 import pe.aido.cuadre.debug.DebugPayments
 import pe.aido.cuadre.sync.PushRegisterWorker
+import pe.aido.cuadre.sync.SyncWorker
 import pe.aido.cuadre.sync.SyncCodec
 import pe.aido.cuadre.account.AuthMessages
 import pe.aido.cuadre.account.GoogleSignIn
@@ -118,6 +119,8 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         cuadre.alerts.onScreenStarted()
+        // Catch up with the store's other phones every time the app comes up.
+        if (cuadre.storeLink.link.value != null) SyncWorker.enqueue(this)
     }
 
     override fun onStop() {
@@ -334,6 +337,7 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
                             onAddCash = { cashOpen = true },
                             onCloseDay = { closingDay = true },
                             onCashTap = { deleting = it },
+                            storeName = link?.storeName,
                             closeLabel = todayClose?.let {
                                 "Contaste ${pe.aido.cuadre.ui.soles(it.countedCash)} · " +
                                     CashClose.differenceLabel(it.countedCash - it.expectedCash)
@@ -427,6 +431,7 @@ private suspend fun linkOwnPhone(app: CuadreApp, name: String, storeName: String
         is CuadreApi.Result.Ok -> {
             app.storeLink.save(r.value, linkedAt = System.currentTimeMillis())
             PushRegisterWorker.enqueue(app)
+            SyncWorker.enqueue(app)
             LinkOutcome.Done
         }
         is CuadreApi.Result.Rejected -> when (r.status) {
@@ -447,6 +452,7 @@ private suspend fun pairPhone(app: CuadreApp, code: String, name: String): Strin
         is CuadreApi.Result.Ok -> {
             app.storeLink.save(r.value, linkedAt = System.currentTimeMillis())
             PushRegisterWorker.enqueue(app)
+            SyncWorker.enqueue(app)
             null
         }
         is CuadreApi.Result.Rejected -> "Código incorrecto o vencido. Genera uno nuevo en el panel."

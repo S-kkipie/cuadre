@@ -49,8 +49,11 @@ class PaymentRepository(private val dao: PaymentDao) {
      * arrives twice — or a payment this phone also captured — is stored once. Never re-uploaded.
      * Returns true if it was new here.
      */
-    suspend fun insertRemote(payment: ConfirmedPayment): Boolean =
-        lock.withLock { dao.insert(payment.toEntity().copy(synced = true)) != -1L }
+    suspend fun insertRemote(payment: ConfirmedPayment): Boolean = lock.withLock {
+        val new = dao.insert(payment.toEntity().copy(synced = true)) != -1L
+        if (!new) payment.fromDevice?.let { dao.setSourceDevice(payment.id, it) }
+        new
+    }
 
     /** Captured here since [since] (when this phone joined the store) and not yet shared. */
     suspend fun pendingUpload(since: Long): List<ConfirmedPayment> = dao.unsyncedSince(since).map { it.toConfirmed() }
@@ -76,6 +79,7 @@ private fun PaymentEntity.toConfirmed() = ConfirmedPayment(
         rawText = rawText,
         securityCode = securityCode,
     ),
+    fromDevice = sourceDevice,
 )
 
 private fun ConfirmedPayment.toEntity() = PaymentEntity(
@@ -86,4 +90,5 @@ private fun ConfirmedPayment.toEntity() = PaymentEntity(
     postedAtMillis = event.postedAtMillis,
     rawText = event.rawText,
     securityCode = event.securityCode,
+    sourceDevice = fromDevice,
 )

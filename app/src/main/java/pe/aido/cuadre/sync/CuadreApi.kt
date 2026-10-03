@@ -28,6 +28,10 @@ class CuadreApi(private val baseUrl: String = BuildConfig.CUADRE_API_URL) {
     fun upload(token: String, payment: ConfirmedPayment): Result<Unit> =
         call("POST", "/payments", token, SyncCodec.uploadBody(payment)) { }
 
+    /** The store's payments posted after [since] (epoch ms), newest first. */
+    fun storePayments(token: String, since: Long, limit: Int = 500): Result<List<ConfirmedPayment>> =
+        call("GET", "/payments?since=$since&limit=$limit", token, "") { SyncCodec.parseStorePayments(it) }
+
     // --- Account (Better Auth). The session token travels as a bearer, never as a cookie. ---
 
     fun signInEmail(email: String, password: String): Result<SyncCodec.Session> =
@@ -53,10 +57,13 @@ class CuadreApi(private val baseUrl: String = BuildConfig.CUADRE_API_URL) {
             conn.requestMethod = method
             conn.connectTimeout = 10_000
             conn.readTimeout = 15_000
-            conn.doOutput = true
-            conn.setRequestProperty("Content-Type", "application/json")
             bearer?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
-            conn.outputStream.use { it.write(body.toByteArray()) }
+            // A GET must not open the output stream: HttpURLConnection would silently turn it into a POST.
+            if (method != "GET") {
+                conn.doOutput = true
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.outputStream.use { it.write(body.toByteArray()) }
+            }
             val status = conn.responseCode
             when {
                 status in 200..299 -> Result.Ok(parse(conn.inputStream.bufferedReader().use { it.readText() }))

@@ -13,6 +13,7 @@ import pe.aido.cuadre.data.CuadreDatabase
 import pe.aido.cuadre.data.MIGRATION_1_2
 import pe.aido.cuadre.data.MIGRATION_2_3
 import pe.aido.cuadre.data.MIGRATION_3_4
+import pe.aido.cuadre.data.MIGRATION_4_5
 import pe.aido.cuadre.data.PaymentRepository
 import pe.aido.cuadre.domain.PaymentEvent
 import pe.aido.cuadre.sync.StoreLink
@@ -23,7 +24,7 @@ import pe.aido.cuadre.sync.SyncWorker
 class CuadreApp : Application() {
     val database: CuadreDatabase by lazy {
         Room.databaseBuilder(this, CuadreDatabase::class.java, "cuadre.db")
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .build()
     }
     val repository: PaymentRepository by lazy { PaymentRepository(database.paymentDao()) }

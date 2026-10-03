@@ -17,6 +17,8 @@ object VerificationEngine {
     data class ConfirmedPayment(
         val id: String,
         val event: PaymentEvent,
+        /** Name of the store phone that captured it ("Caja 2"); null when captured on this one. */
+        val fromDevice: String? = null,
     )
 
     /** Accept an incoming event unless it duplicates one already confirmed. */

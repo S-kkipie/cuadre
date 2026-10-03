@@ -24,6 +24,8 @@ data class PaymentEntity(
     val securityCode: String? = null,    // schema v2
     /** Uploaded to the store, or received from it (schema v4). */
     @ColumnInfo(defaultValue = "1") val synced: Boolean = false,
+    /** Store phone that captured it, for payments received from the store (schema v5). */
+    val sourceDevice: String? = null,
 )
 
 @Dao
@@ -51,6 +53,10 @@ interface PaymentDao {
 
     @Query("UPDATE payments SET synced = 1 WHERE id = :id")
     suspend fun markSynced(id: String)
+
+    /** Payments received before v5 have no phone name; fill it in when the store resends them. */
+    @Query("UPDATE payments SET sourceDevice = :device WHERE id = :id AND sourceDevice IS NULL")
+    suspend fun setSourceDevice(id: String, device: String)
 
     /**
      * Only hand-entered cash can be deleted. Listener-proven Yape/Plin payments are immutable,
@@ -83,7 +89,7 @@ interface DayCloseDao {
     suspend fun latest(): DayCloseEntity?
 }
 
-@Database(entities = [PaymentEntity::class, DayCloseEntity::class], version = 4, exportSchema = false)
+@Database(entities = [PaymentEntity::class, DayCloseEntity::class], version = 5, exportSchema = false)
 abstract class CuadreDatabase : RoomDatabase() {
     abstract fun paymentDao(): PaymentDao
     abstract fun dayCloseDao(): DayCloseDao
@@ -104,6 +110,13 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
 val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE payments ADD COLUMN securityCode TEXT")
+    }
+}
+
+/** v4 -> v5: which store phone captured each shared payment. */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE payments ADD COLUMN sourceDevice TEXT")
     }
 }
 

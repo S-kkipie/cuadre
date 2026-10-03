@@ -53,6 +53,37 @@ object SyncCodec {
     fun errorCode(body: String): String? =
         runCatching { JSONObject(body).optString("code").takeIf { it.isNotBlank() } }.getOrNull()
 
+    /**
+     * `{ response: [{ id, wallet, amount, counterparty, securityCode, postedAt (ISO), sourceDevice }] }`.
+     * Same rule as a push: a row we can't read is dropped, never guessed.
+     */
+    fun parseStorePayments(json: String): List<ConfirmedPayment> {
+        val rows = JSONObject(json).getJSONArray("response")
+        return (0 until rows.length()).mapNotNull { i ->
+            val r = rows.getJSONObject(i)
+            val id = r.optString("id").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val amount = r.optDouble("amount").takeIf { !it.isNaN() && it > 0 } ?: return@mapNotNull null
+            val postedAt = runCatching { java.time.Instant.parse(r.getString("postedAt")).toEpochMilli() }.getOrNull()
+                ?: return@mapNotNull null
+            ConfirmedPayment(
+                id = id,
+                event = PaymentEvent(
+                    wallet = Wallet.entries.firstOrNull { it.name == r.optString("wallet") } ?: Wallet.UNKNOWN,
+                    amount = amount,
+                    counterparty = r.optNullable("counterparty"),
+                    direction = PaymentDirection.INCOMING,
+                    postedAtMillis = postedAt,
+                    rawText = "remoto",
+                    securityCode = r.optNullable("securityCode"),
+                ),
+                fromDevice = r.optNullable("sourceDevice"),
+            )
+        }
+    }
+
+    private fun JSONObject.optNullable(key: String): String? =
+        if (!has(key) || isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
+
     /** `{ response: { deviceId, token, storeId, storeName }, code, status }` */
     fun parsePaired(json: String): Paired {
         val r = JSONObject(json).getJSONObject("response")
@@ -81,7 +112,8 @@ object SyncCodec {
                 securityCode = data["securityCode"]?.takeIf { it.isNotBlank() },
             ),
         )
-        return RemotePayment(payment, fromDevice = data["fromDevice"], storeName = data["storeName"])
+        val from = data["fromDevice"]?.takeIf { it.isNotBlank() }
+        return RemotePayment(payment.copy(fromDevice = from), fromDevice = from, storeName = data["storeName"])
     }
 
     data class RemotePayment(val payment: ConfirmedPayment, val fromDevice: String?, val storeName: String?)

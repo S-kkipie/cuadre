@@ -39,6 +39,9 @@ private class FakePaymentDao : PaymentDao {
     override suspend fun markSynced(id: String) {
         rows.value = rows.value.map { if (it.id == id) it.copy(synced = true) else it }
     }
+    override suspend fun setSourceDevice(id: String, device: String) {
+        rows.value = rows.value.map { if (it.id == id && it.sourceDevice == null) it.copy(sourceDevice = device) else it }
+    }
     override suspend fun deleteCash(id: String): Int {
         val before = rows.value.size
         rows.value = rows.value.filterNot { it.id == id && it.wallet == "EFECTIVO" }

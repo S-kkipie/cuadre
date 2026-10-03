@@ -13,7 +13,8 @@ import pe.aido.cuadre.cuadre
 import java.util.concurrent.TimeUnit
 
 /**
- * Shares payments captured on this phone with the store. Runs when there's a connection, retries
+ * Shares payments captured on this phone with the store, then catches up on the payments the
+ * store's other phones confirmed (missed pushes, or from before this phone joined). Runs when there's a connection, retries
  * with backoff, and survives restarts — a payment confirmed with no signal still reaches the owner.
  */
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -35,11 +36,21 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 is CuadreApi.Result.Failed -> return Result.retry()
             }
         }
+
+        // Catch-up is quiet: these are old by definition, so no sound and no confirmation screen.
+        val since = System.currentTimeMillis() - CATCH_UP_MILLIS
+        when (val r = api.storePayments(link.token, since)) {
+            is CuadreApi.Result.Ok -> r.value.forEach { app.repository.insertRemote(it) }
+            is CuadreApi.Result.Rejected -> if (r.status == 401) app.storeLink.clear()
+            is CuadreApi.Result.Failed -> return Result.retry()
+        }
         return Result.success()
     }
 
     companion object {
         private const val NAME = "cuadre-sync"
+        /** History is shown month by month; a phone that joins mid-month gets the whole month. */
+        private const val CATCH_UP_MILLIS = 35L * 24 * 60 * 60 * 1000
 
         fun enqueue(context: Context) {
             val request = OneTimeWorkRequestBuilder<SyncWorker>()

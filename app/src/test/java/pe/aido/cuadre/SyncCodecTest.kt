@@ -53,4 +53,31 @@ class SyncCodecTest {
         )
         assertEquals(SyncCodec.Paired("d1", "t0k", "s1", "Bodega Rosa"), p)
     }
+
+    @Test fun storePaymentsKeepSourcePhoneAndDropUnreadableRows() {
+        val list = SyncCodec.parseStorePayments(
+            """{"response":[
+              {"id":"p1","wallet":"YAPE","amount":18.5,"counterparty":"Carmen Quispe","securityCode":"274",
+               "postedAt":"2026-10-03T21:02:11.000Z","sourceDevice":"Caja 2"},
+              {"id":"p2","wallet":"PLIN_BBVA","amount":12,"counterparty":null,"securityCode":null,
+               "postedAt":"2026-10-03T20:56:00.000Z","sourceDevice":null},
+              {"id":"bad","wallet":"YAPE","amount":0,"postedAt":"2026-10-03T20:00:00.000Z"},
+              {"id":"bad2","wallet":"YAPE","amount":5,"postedAt":"ayer"}
+            ]}""",
+        )
+        assertEquals(listOf("p1", "p2"), list.map { it.id })
+        assertEquals("Caja 2", list[0].fromDevice)
+        assertEquals(1791061331000, list[0].event.postedAtMillis)
+        assertEquals("274", list[0].event.securityCode)
+        assertNull(list[1].fromDevice)
+        assertNull(list[1].event.counterparty)
+    }
+
+    @Test fun pushCarriesSourcePhone() {
+        val r = SyncCodec.fromPush(
+            mapOf("type" to "payment", "id" to "p1", "amount" to "18.50", "postedAt" to "1790974931000",
+                "wallet" to "YAPE", "fromDevice" to "Caja 2"),
+        )
+        assertEquals("Caja 2", r?.payment?.fromDevice)
+    }
 }

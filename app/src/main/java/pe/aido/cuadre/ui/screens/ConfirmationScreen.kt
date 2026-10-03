@@ -107,7 +107,7 @@ fun ConfirmationScreen(payment: ConfirmedPayment, queued: Int, onDismiss: () -> 
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            "${e.wallet.label()} · ${e.postedAtMillis.hhmmss()}",
+            listOfNotNull(e.wallet.label(), e.postedAtMillis.hhmmss(), payment.fromDevice).joinToString(" · "),
             style = t.secondary.copy(fontSize = 16.sp),
             color = c.onFloodMuted,
         )

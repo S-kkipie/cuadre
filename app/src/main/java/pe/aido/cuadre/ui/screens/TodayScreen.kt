@@ -72,6 +72,8 @@ fun TodayScreen(
     onCloseDay: () -> Unit,
     onCashTap: (ConfirmedPayment) -> Unit,
     closeLabel: String?,
+    /** Set when this phone is linked: the list then holds every phone's payments. */
+    storeName: String? = null,
     debugAction: (@Composable () -> Unit)? = null,
 ) {
     val c = Cuadre.colors
@@ -124,7 +126,7 @@ fun TodayScreen(
 
         item {
             Spacer(Modifier.height(40.dp))
-            Text("Recibido hoy", style = t.secondary, color = c.inkMuted)
+            Text(if (storeName != null) "Recibido hoy en $storeName" else "Recibido hoy", style = t.secondary, color = c.inkMuted)
             Spacer(Modifier.height(4.dp))
             // The total rolls up when a payment lands: old value exits up, new one rises in.
             AnimatedContent(
@@ -172,7 +174,10 @@ fun TodayScreen(
             Hairline()
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Pagos", style = t.section, color = c.ink, modifier = Modifier.weight(1f))
+                Column(Modifier.weight(1f)) {
+                    Text("Pagos", style = t.section, color = c.ink)
+                    if (storeName != null) Text("De todos los celulares de la tienda", style = t.secondary, color = c.inkMuted)
+                }
                 TextLink("Ver historial", onOpenHistory)
             }
         }
