@@ -74,6 +74,9 @@ fun TodayScreen(
     closeLabel: String?,
     /** Set when this phone is linked: the list then holds every phone's payments. */
     storeName: String? = null,
+    /** A newer build is on the web (this phone was installed from there). */
+    updateVersion: String? = null,
+    onUpdate: () -> Unit = {},
     debugAction: (@Composable () -> Unit)? = null,
 ) {
     val c = Cuadre.colors
@@ -121,6 +124,29 @@ fun TodayScreen(
                 )
                 Text("Arreglar", style = t.body.copy(fontWeight = FontWeight.SemiBold), color = c.stale)
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = c.stale)
+            }
+        }
+
+        // Same quiet line as the setup one, in brand color: good news, not a problem.
+        if (updateVersion != null) item {
+            Spacer(Modifier.height(if (setupIssues > 0) 8.dp else 20.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .pressable(onClick = onUpdate)
+                    .clip(FieldShape)
+                    .background(c.primary.copy(alpha = 0.08f))
+                    .padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Hay una versión nueva de Cuadre ($updateVersion)",
+                    style = t.body,
+                    color = c.primary,
+                    modifier = Modifier.weight(1f),
+                )
+                Text("Actualizar", style = t.body.copy(fontWeight = FontWeight.SemiBold), color = c.primary)
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = c.primary)
             }
         }
 

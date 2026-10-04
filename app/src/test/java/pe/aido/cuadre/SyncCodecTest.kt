@@ -80,4 +80,14 @@ class SyncCodecTest {
         )
         assertEquals("Caja 2", r?.payment?.fromDevice)
     }
+
+    @Test
+    fun `latest app reads version and download page`() {
+        val latest = SyncCodec.parseLatestApp(
+            """{"response":{"versionCode":2,"versionName":"1.0.1","url":"https://cuadre.aido.lat/descargar"},"code":"OK","status":200}""",
+        )
+        assertEquals(2, latest.versionCode)
+        assertEquals("1.0.1", latest.versionName)
+        assertEquals("https://cuadre.aido.lat/descargar", latest.url)
+    }
 }

@@ -15,8 +15,8 @@ android {
         applicationId = "pe.aido.cuadre"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // cuadre-backend base URL (e.g. https://cuadre-backend.vercel.app). Empty = sharing off.
         val apiUrl = (project.findProperty("cuadreApiUrl") as String?).orEmpty()

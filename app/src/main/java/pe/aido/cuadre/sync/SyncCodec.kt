@@ -25,6 +25,14 @@ object SyncCodec {
 
     data class Paired(val deviceId: String, val token: String, val storeId: String, val storeName: String)
 
+    /** The newest Android build on the web, and the page that installs it. */
+    data class LatestApp(val versionCode: Int, val versionName: String, val url: String)
+
+    fun parseLatestApp(json: String): LatestApp {
+        val r = JSONObject(json).getJSONObject("response")
+        return LatestApp(r.getInt("versionCode"), r.getString("versionName"), r.getString("url"))
+    }
+
     /** A Better Auth session for this phone's account. */
     data class Session(val token: String, val name: String, val email: String)
 

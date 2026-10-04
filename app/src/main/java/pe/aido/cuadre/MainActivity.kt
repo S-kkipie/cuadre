@@ -85,6 +85,8 @@ import java.time.ZoneId
 
 class MainActivity : ComponentActivity() {
     private val setup = mutableStateOf(SetupState(false, true, emptyList()))
+    /** A newer web build than this one, when installed from the web (Play updates on its own). */
+    private val update = mutableStateOf<SyncCodec.LatestApp?>(null)
     private val dayStart = mutableLongStateOf(startOfToday())
 
     private val requestNotifications =
@@ -103,12 +105,14 @@ class MainActivity : ComponentActivity() {
                 App(
                     setup = setup.value,
                     dayStart = dayStart.longValue,
+                    update = update.value,
                     actions = Actions(
                         openListenerSettings = { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) },
                         requestNotifications = ::askNotifications,
                         fixBattery = { BatteryCheck.openAppSettings(this, it) },
                         share = ::shareText,
                         exportMonth = ::exportMonth,
+                        openUrl = { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(it))) },
                     ),
                 )
             }
@@ -121,6 +125,26 @@ class MainActivity : ComponentActivity() {
         cuadre.alerts.onScreenStarted()
         // Catch up with the store's other phones every time the app comes up.
         if (cuadre.storeLink.link.value != null) SyncWorker.enqueue(this)
+        checkForUpdate()
+    }
+
+    /** Web installs never update by themselves: ask the server which build is current. Quiet on failure. */
+    private fun checkForUpdate() {
+        if (!installedOutsidePlayStore()) return
+        lifecycleScope.launch {
+            val r = withContext(Dispatchers.IO) { CuadreApi().latestApp() }
+            if (r is CuadreApi.Result.Ok) {
+                update.value = r.value.takeIf { it.versionCode > BuildConfig.VERSION_CODE }
+            }
+        }
+    }
+
+    private fun installedOutsidePlayStore(): Boolean {
+        val installer = runCatching {
+            if (Build.VERSION.SDK_INT >= 30) packageManager.getInstallSourceInfo(packageName).installingPackageName
+            else @Suppress("DEPRECATION") packageManager.getInstallerPackageName(packageName)
+        }.getOrNull()
+        return installer != "com.android.vending"
     }
 
     override fun onStop() {
@@ -146,11 +170,7 @@ class MainActivity : ComponentActivity() {
     }
 
     /** Android 13+ restricts notification access for apps that didn't come from a store. */
-    private fun installedOutsidePlay(): Boolean {
-        if (Build.VERSION.SDK_INT < 33) return false
-        val installer = runCatching { packageManager.getInstallSourceInfo(packageName).installingPackageName }.getOrNull()
-        return installer != "com.android.vending"
-    }
+    private fun installedOutsidePlay(): Boolean = Build.VERSION.SDK_INT >= 33 && installedOutsidePlayStore()
 
     private fun askNotifications() {
         if (Build.VERSION.SDK_INT >= 33) {
@@ -205,10 +225,11 @@ private class Actions(
     val fixBattery: (String) -> Unit,
     val share: (String) -> Unit,
     val exportMonth: (YearMonth) -> Unit,
+    val openUrl: (String) -> Unit,
 )
 
 @Composable
-private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
+private fun App(setup: SetupState, dayStart: Long, update: SyncCodec.LatestApp?, actions: Actions) {
     val context = LocalContext.current
     val app = context.cuadre
     val scope = rememberCoroutineScope()
@@ -364,6 +385,8 @@ private fun App(setup: SetupState, dayStart: Long, actions: Actions) {
                             onCloseDay = { closingDay = true },
                             onCashTap = { deleting = it },
                             storeName = link?.storeName,
+                            updateVersion = update?.versionName,
+                            onUpdate = { update?.let { actions.openUrl(it.url) } },
                             closeLabel = todayClose?.let {
                                 "Contaste ${pe.aido.cuadre.ui.soles(it.countedCash)} · " +
                                     CashClose.differenceLabel(it.countedCash - it.expectedCash)

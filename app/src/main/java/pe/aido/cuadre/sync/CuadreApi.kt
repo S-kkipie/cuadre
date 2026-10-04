@@ -32,6 +32,10 @@ class CuadreApi(private val baseUrl: String = BuildConfig.CUADRE_API_URL) {
     fun storePayments(token: String, since: Long, limit: Int = 500): Result<List<ConfirmedPayment>> =
         call("GET", "/payments?since=$since&limit=$limit", token, "") { SyncCodec.parseStorePayments(it) }
 
+    /** Which build the website serves; phones installed from the web use it to offer updates. */
+    fun latestApp(): Result<SyncCodec.LatestApp> =
+        call("GET", "/app/latest", null, "") { SyncCodec.parseLatestApp(it) }
+
     // --- Account (Better Auth). The session token travels as a bearer, never as a cookie. ---
 
     fun signInEmail(email: String, password: String): Result<SyncCodec.Session> =
